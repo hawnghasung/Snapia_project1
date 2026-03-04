@@ -141,6 +141,24 @@ public class FollowController {
         return "main/follow/requests";
     }
 
+    // 팔로워 목록 JSON API (팝업용)
+    @GetMapping("/followers/data/{userId}")
+    @ResponseBody
+    public List<FollowListDTO> getFollowersData(@PathVariable Long userId,
+                                                @AuthenticationPrincipal PrincipalDetails principalDetails) {
+        Long principalId = principalDetails.getUsers().getUid();
+        return followService.findFollowerList(principalId, userId);
+    }
+
+    // 팔로잉 목록 JSON API (팝업용)
+    @GetMapping("/following/data/{userId}")
+    @ResponseBody
+    public List<FollowListDTO> getFollowingData(@PathVariable Long userId,
+                                                @AuthenticationPrincipal PrincipalDetails principalDetails) {
+        Long principalId = principalDetails.getUsers().getUid();
+        return followService.findFollowingList(principalId, userId);
+    }
+
     // 팔로우 상태 확인 API (AJAX)
     @GetMapping("/status/{userId}")
     @ResponseBody

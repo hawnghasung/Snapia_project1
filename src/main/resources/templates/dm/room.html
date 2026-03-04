@@ -65,7 +65,7 @@
         .msg-row {
             display: flex;
             align-items: flex-end;
-            gap: 8px;
+            gap: 6px;
             margin-bottom: 2px;
         }
 
@@ -94,16 +94,26 @@
             border-bottom-left-radius: 4px;
         }
 
+        .msg-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .msg-row:not(.mine) .msg-meta {
+            align-items: flex-start;
+        }
+
         .msg-time {
             font-size: 11px;
             color: #8e8e8e;
-            margin-bottom: 2px;
         }
 
         .msg-read {
             font-size: 11px;
             color: #8e8e8e;
-            text-align: right;
         }
 
         .dm-input-area {
@@ -166,17 +176,23 @@
     <!-- 메시지 목록 -->
     <div class="dm-messages" id="messageList">
         <div th:each="msg : ${messageList}">
-            <div th:class="${msg.users.uid == currentUid} ? 'msg-row mine' : 'msg-row'">
-                <div th:class="${msg.users.uid == currentUid} ? 'msg-bubble mine' : 'msg-bubble theirs'"
+            <div th:class="${msg.senderId == currentUid} ? 'msg-row mine' : 'msg-row'">
+                <div th:class="${msg.senderId == currentUid} ? 'msg-bubble mine' : 'msg-bubble theirs'"
                      th:text="${msg.content}">메시지</div>
+                <div class="msg-meta">
+                    <span class="msg-time"
+                          th:text="${msg.dateTime != null} ? ${#temporals.format(msg.dateTime, 'HH:mm')} : ''"></span>
+                    <span class="msg-read"
+                          th:if="${msg.senderId == currentUid}"
+                          th:text="${msg.readStatus != null and msg.readStatus.name() == 'READ'} ? '읽음' : '안읽음'"></span>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- 입력창 -->
     <div class="dm-input-area">
-        <textarea id="msgInput" class="dm-input" placeholder="메시지 입력..." rows="1"
-                  onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault(); sendMessage();}"></textarea>
+        <textarea id="msgInput" class="dm-input" placeholder="메시지 입력..." rows="1"></textarea>
         <button id="sendBtn" class="dm-send-btn" onclick="sendMessage()">전송</button>
     </div>
 </div>
@@ -185,11 +201,20 @@
     const roomId = [[${roomId}]];
     const currentUid = [[${currentUid}]];
 
-    // 메시지 목록 맨 아래로 스크롤
     const messageList = document.getElementById('messageList');
     messageList.scrollTop = messageList.scrollHeight;
 
-    // WebSocket 연결
+    const msgInput = document.getElementById('msgInput');
+    let isComposing = false;
+    msgInput.addEventListener('compositionstart', () => isComposing = true);
+    msgInput.addEventListener('compositionend', () => isComposing = false);
+    msgInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' && !event.shiftKey && !isComposing) {
+            event.preventDefault();
+            sendMessage();
+        }
+    });
+
     const socket = new SockJS('/ws');
     const stompClient = Stomp.over(socket);
     stompClient.debug = null;
@@ -216,6 +241,7 @@
 
     function appendMessage(msg) {
         const isMine = msg.senderId === currentUid;
+
         const row = document.createElement('div');
         row.className = isMine ? 'msg-row mine' : 'msg-row';
 
@@ -223,7 +249,26 @@
         bubble.className = isMine ? 'msg-bubble mine' : 'msg-bubble theirs';
         bubble.textContent = msg.content;
 
+        const meta = document.createElement('div');
+        meta.className = 'msg-meta';
+
+        const time = document.createElement('span');
+        time.className = 'msg-time';
+        if (msg.dateTime) {
+            const d = new Date(msg.dateTime);
+            time.textContent = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        }
+        meta.appendChild(time);
+
+        if (isMine) {
+            const readSpan = document.createElement('span');
+            readSpan.className = 'msg-read';
+            readSpan.textContent = (msg.readStatus === 'READ') ? '읽음' : '안읽음';
+            meta.appendChild(readSpan);
+        }
+
         row.appendChild(bubble);
+        row.appendChild(meta);
         messageList.appendChild(row);
         messageList.scrollTop = messageList.scrollHeight;
     }

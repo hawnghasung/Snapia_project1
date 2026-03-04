@@ -15,4 +15,6 @@ public interface MessageReadStatusRepository extends JpaRepository<MessageReadSt
 
     @Query("SELECT COUNT(mrs) FROM MessageReadStatus mrs WHERE mrs.message.room.roid = :roomId AND mrs.users = :user AND mrs.readStatus = :status")
     int countUnreadMessages(@Param("roomId") Long roomId, @Param("user") Users user, @Param("status") ReadStatus status);
+
+    List<MessageReadStatus> findByMessageMessid(Long messageMessid);
 }

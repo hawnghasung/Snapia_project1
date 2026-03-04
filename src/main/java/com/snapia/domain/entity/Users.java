@@ -6,6 +6,7 @@ import com.snapia.domain.constant.Role;
 import com.snapia.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.EqualsAndHashCode;
 
 @Entity
 @Getter
@@ -14,6 +15,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(of = "uid")
 public class Users extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -19,9 +19,10 @@ public class RoomController {
     private final RoomService roomService;
 
     @PostMapping("/create")
-    public Room createRoom(@RequestBody Map<String, Long> body, @AuthenticationPrincipal PrincipalDetails principalDetails) {
+    public Map<String, Long> createRoom(@RequestBody Map<String, Long> body, @AuthenticationPrincipal PrincipalDetails principalDetails) {
         Long receiverId = body.get("receiverId");
-        return roomService.createRoom(principalDetails.getUsers(), receiverId);
+        Room room = roomService.createRoom(principalDetails.getUsers(), receiverId);
+        return Map.of("roid", room.getRoid());
     }
 
     @GetMapping("/list")

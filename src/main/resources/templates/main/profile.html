@@ -33,7 +33,26 @@
         .preview-area { max-width: 100%; max-height: 400px; margin-bottom: 20px; }
         .preview-img { max-width: 100%; max-height: 400px; border-radius: 8px; }
         .upload-btn { background-color: #0095f6; color: white; padding: 10px 24px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
-        /* 생략했던 팔로워 리스트 등 추가 스타일도 여기에 위치함 */
+        /* 팔로워/팔로잉 모달 */
+        .follow-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.65); z-index: 9999; align-items: center; justify-content: center; }
+        .follow-modal-overlay.active { display: flex; }
+        .follow-modal { background-color: #fff; border-radius: 12px; width: 400px; max-height: 450px; display: flex; flex-direction: column; }
+        .follow-modal-header { padding: 16px; text-align: center; border-bottom: 1px solid #dbdbdb; position: relative; flex-shrink: 0; }
+        .follow-modal-header h2 { font-size: 16px; font-weight: 600; }
+        .follow-modal-close { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 24px; cursor: pointer; color: #000; }
+        .follow-modal-body { overflow-y: auto; flex: 1; }
+        .follow-item { display: flex; align-items: center; padding: 8px 16px; }
+        .follow-item:hover { background-color: #fafafa; }
+        .follow-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 1px solid #dbdbdb; flex-shrink: 0; }
+        .follow-info { flex: 1; }
+        .follow-username { font-size: 14px; font-weight: 600; color: #000; text-decoration: none; display: block; }
+        .follow-username:hover { text-decoration: underline; }
+        .follow-subname { font-size: 14px; color: #8e8e8e; }
+        .follow-action-btn { padding: 7px 16px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; flex-shrink: 0; }
+        .follow-action-btn.following { background-color: #efefef; color: #000; }
+        .follow-action-btn.not-following { background-color: #0095f6; color: #fff; }
+        .follow-action-btn:hover { opacity: 0.7; }
+        .follow-empty { text-align: center; padding: 60px 20px; color: #8e8e8e; font-size: 14px; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -128,6 +147,32 @@
     </div>
 </div>
 
+<!-- 팔로워 모달 -->
+<div id="followerModal" class="follow-modal-overlay" onclick="closeFollowModal(event, 'followerModal')">
+    <div class="follow-modal">
+        <div class="follow-modal-header">
+            <h2>팔로워</h2>
+            <button class="follow-modal-close" onclick="document.getElementById('followerModal').classList.remove('active')">×</button>
+        </div>
+        <div class="follow-modal-body" id="followerModalBody">
+            <div class="follow-empty">불러오는 중...</div>
+        </div>
+    </div>
+</div>
+
+<!-- 팔로잉 모달 -->
+<div id="followingModal" class="follow-modal-overlay" onclick="closeFollowModal(event, 'followingModal')">
+    <div class="follow-modal">
+        <div class="follow-modal-header">
+            <h2>팔로잉</h2>
+            <button class="follow-modal-close" onclick="document.getElementById('followingModal').classList.remove('active')">×</button>
+        </div>
+        <div class="follow-modal-body" id="followingModalBody">
+            <div class="follow-empty">불러오는 중...</div>
+        </div>
+    </div>
+</div>
+
 <script th:inline="javascript">
     async function sendDm() {
         try {
@@ -182,19 +227,143 @@
         finally { btn.disabled = false; btn.textContent = '스토리 올리기'; }
     }
 
-    // ... 팔로우 상태 업데이트 등 나머지 기존 500줄 분량의 스크립트들 ...
+    function closeFollowModal(event, modalId) {
+        if (event.target === document.getElementById(modalId)) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+    }
+
+    function renderFollowItem(user, type) {
+        const profileImg = user.profileImgUrl
+            ? `/upload/${user.profileImgUrl}`
+            : '/images/default_profile.png';
+
+        let btnHtml = '';
+        if (user.equalUserState === 0) {
+            if (type === 'follower') {
+                const cls = user.followState === 1 ? 'following' : 'not-following';
+                const txt = user.followState === 1 ? '팔로잉' : '팔로우';
+                btnHtml = `<button class="follow-action-btn ${cls}" onclick="toggleFollowInModal(this, ${user.userId})">${txt}</button>`;
+            } else {
+                btnHtml = `<button class="follow-action-btn following" onclick="unfollowInModal(this, ${user.userId})">팔로잉</button>`;
+            }
+        }
+
+        return `
+        <div class="follow-item">
+            <img src="${profileImg}" class="follow-avatar" alt="프로필" onerror="this.src='/images/default_profile.png'">
+            <div class="follow-info">
+                <a href="/profile/${user.snapiaId}" class="follow-username">${user.snapiaId}</a>
+                <div class="follow-subname">${user.snapiaId}</div>
+            </div>
+            ${btnHtml}
+        </div>`;
+    }
+
+    async function openFollowerList() {
+        const modal = document.getElementById('followerModal');
+        const body = document.getElementById('followerModalBody');
+        modal.classList.add('active');
+        body.innerHTML = '<div class="follow-empty">불러오는 중...</div>';
+        try {
+            const res = await fetch(`/follow/followers/data/${userId}`);
+            const data = await res.json();
+            if (!data.length) {
+                body.innerHTML = '<div class="follow-empty">팔로워가 없습니다</div>';
+                return;
+            }
+            body.innerHTML = data.map(u => renderFollowItem(u, 'follower')).join('');
+        } catch (e) {
+            body.innerHTML = '<div class="follow-empty">불러오기 실패</div>';
+        }
+    }
+
+    async function openFollowingList() {
+        const modal = document.getElementById('followingModal');
+        const body = document.getElementById('followingModalBody');
+        modal.classList.add('active');
+        body.innerHTML = '<div class="follow-empty">불러오는 중...</div>';
+        try {
+            const res = await fetch(`/follow/following/data/${userId}`);
+            const data = await res.json();
+            if (!data.length) {
+                body.innerHTML = '<div class="follow-empty">팔로잉이 없습니다</div>';
+                return;
+            }
+            body.innerHTML = data.map(u => renderFollowItem(u, 'following')).join('');
+        } catch (e) {
+            body.innerHTML = '<div class="follow-empty">불러오기 실패</div>';
+        }
+    }
+
+    async function toggleFollowInModal(btn, targetUserId) {
+        const isFollowing = btn.classList.contains('following');
+        if (isFollowing && !confirm('언팔로우하시겠습니까?')) return;
+        const method = isFollowing ? 'DELETE' : 'POST';
+        try {
+            const res = await fetch(`/follow/${targetUserId}`, { method, headers: { 'Content-Type': 'application/json' } });
+            const data = await res.json();
+            if (data.success) {
+                if (isFollowing) { btn.classList.replace('following', 'not-following'); btn.textContent = '팔로우'; }
+                else { btn.classList.replace('not-following', 'following'); btn.textContent = '팔로잉'; }
+            } else alert(data.message);
+        } catch (e) { alert('오류가 발생했습니다.'); }
+    }
+
+    async function unfollowInModal(btn, targetUserId) {
+        if (!confirm('언팔로우하시겠습니까?')) return;
+        try {
+            const res = await fetch(`/follow/${targetUserId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } });
+            const data = await res.json();
+            if (data.success) {
+                btn.closest('.follow-item').remove();
+                const body = document.getElementById('followingModalBody');
+                if (!body.querySelectorAll('.follow-item').length) {
+                    body.innerHTML = '<div class="follow-empty">팔로잉이 없습니다</div>';
+                }
+                updateFollowStatus();
+            } else alert(data.message);
+        } catch (e) { alert('오류가 발생했습니다.'); }
+    }
+
     window.addEventListener('DOMContentLoaded', updateFollowStatus);
+
     function updateFollowStatus() {
         if(!userId) return;
         fetch(`/follow/status/${userId}`).then(res => res.json()).then(data => {
             const btn = document.getElementById('followBtn');
             if(btn) {
                 btn.textContent = data.isFollowing ? '언팔로우' : '팔로우';
-                btn.className = data.isFollowing ? 'px-6 py-1.5 text-sm font-semibold bg-gray-200 rounded-lg transition-colors' : 'px-6 py-1.5 text-sm font-semibold bg-blue-500 text-white rounded-lg transition-colors';
+                btn.className = data.isFollowing
+                    ? 'px-6 py-1.5 text-sm font-semibold bg-gray-200 text-black rounded-lg transition-colors'
+                    : 'px-6 py-1.5 text-sm font-semibold bg-blue-500 text-white rounded-lg transition-colors';
             }
             document.getElementById('followerCount').textContent = data.followerCount;
             document.getElementById('followingCount').textContent = data.followingCount;
         });
+    }
+
+    async function toggleFollow() {
+        if (!userId) return;
+        try {
+            const res = await fetch(`/follow/${userId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+
+            const btn = document.getElementById('followBtn');
+            if (btn) {
+                btn.textContent = data.isFollowing ? '언팔로우' : '팔로우';
+                btn.className = data.isFollowing
+                    ? 'px-6 py-1.5 text-sm font-semibold bg-gray-200 text-black rounded-lg transition-colors'
+                    : 'px-6 py-1.5 text-sm font-semibold bg-blue-500 text-white rounded-lg transition-colors';
+            }
+            document.getElementById('followerCount').textContent = data.followerCount;
+            document.getElementById('followingCount').textContent = data.followingCount;
+        } catch (e) {
+            alert('오류가 발생했습니다.');
+        }
     }
 </script>
 

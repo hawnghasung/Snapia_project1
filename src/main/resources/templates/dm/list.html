@@ -156,9 +156,9 @@
                 <div class="dm-room-right">
                     <div class="dm-room-time"
                          th:text="${room.lastMessageTime != null} ? ${#temporals.format(room.lastMessageTime, 'MM/dd HH:mm')} : ''"></div>
-                    <div th:if="${room.unreadCount > 0}"
+                    <div th:if="${room.unreadMessageCount > 0}"
                          class="dm-unread-badge"
-                         th:text="${room.unreadCount}"></div>
+                         th:text="${room.unreadMessageCount}"></div>
                 </div>
             </a>
         </div>
