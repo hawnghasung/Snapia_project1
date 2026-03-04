@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>게시물 수정</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<h1>게시물 수정</h1>
+
+<form th:action="@{/post/{pid}(pid=${post.pid})}" method="post" enctype="multipart/form-data">
+    <div>
+        <label>내용</label>
+        <textarea name="content" rows="5" th:text="${post.content}" required></textarea>
+    </div>
+    <div>
+        <label>현재 이미지</label>
+        <img th:if="${post.postImgUrl}" th:src="@{'/upload/' + ${post.postImgUrl}}" width="200">
+    </div>
+    <div>
+        <label>새 이미지 (변경 시)</label>
+        <input type="file" name="multipartFile" accept="image/*">
+    </div>
+    <div>
+        <label>공개 여부</label>
+        <select name="pubOrNot" th:field="${post.pubOrNot}">
+            <option value="PUB">공개</option>
+            <option value="PRIVATE">비공개</option>
+        </select>
+    </div>
+    <button type="submit">수정</button>
+    <a th:href="@{/post/{pid}(pid=${post.pid})}">취소</a>
+</form>
+
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+</body>
+</html>

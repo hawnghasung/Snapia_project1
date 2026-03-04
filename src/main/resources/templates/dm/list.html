@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메시지 - Snapia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        .dm-container {
+            max-width: 935px;
+            margin: 80px auto 0;
+            background: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 4px;
+            min-height: 600px;
+            display: flex;
+        }
+
+        .dm-sidebar {
+            width: 100%;
+            border-right: 1px solid #dbdbdb;
+        }
+
+        .dm-sidebar-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #dbdbdb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dm-sidebar-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #262626;
+        }
+
+        .dm-room-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 24px;
+            cursor: pointer;
+            transition: background-color 0.15s;
+            text-decoration: none;
+        }
+
+        .dm-room-item:hover {
+            background-color: #fafafa;
+        }
+
+        .dm-room-avatar {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #dbdbdb;
+            flex-shrink: 0;
+        }
+
+        .dm-room-info {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .dm-room-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #262626;
+            margin-bottom: 2px;
+        }
+
+        .dm-room-last-msg {
+            font-size: 14px;
+            color: #8e8e8e;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .dm-room-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .dm-room-time {
+            font-size: 12px;
+            color: #8e8e8e;
+        }
+
+        .dm-unread-badge {
+            background-color: #ed4956;
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            min-width: 18px;
+            height: 18px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+        }
+
+        .dm-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            gap: 12px;
+            color: #8e8e8e;
+        }
+
+        .dm-empty-icon {
+            font-size: 48px;
+        }
+
+        .dm-empty-text {
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<th:block th:replace="~{fragments/header :: header}"></th:block>
+
+<div class="dm-container">
+    <div class="dm-sidebar">
+        <div class="dm-sidebar-header">
+            <h2>메시지</h2>
+        </div>
+
+        <div th:if="${roomList == null or #lists.isEmpty(roomList)}" class="dm-empty">
+            <div class="dm-empty-icon">💬</div>
+            <div class="dm-empty-text">아직 메시지가 없습니다</div>
+        </div>
+
+        <div th:each="room : ${roomList}">
+            <a th:href="@{/dm/{roomId}(roomId=${room.roid})}" class="dm-room-item">
+                <img th:src="${room.profileImageUrl != null} ? '/upload/' + ${room.profileImageUrl} : 'https://i.pravatar.cc/150?u=' + ${room.snapiaId}"
+                     alt="프로필" class="dm-room-avatar">
+                <div class="dm-room-info">
+                    <div class="dm-room-name" th:text="${room.snapiaId}">사용자</div>
+                    <div class="dm-room-last-msg"
+                         th:text="${room.lastMessage != null and room.lastMessage != ''} ? ${room.lastMessage} : '메시지가 없습니다'">마지막 메시지</div>
+                </div>
+                <div class="dm-room-right">
+                    <div class="dm-room-time"
+                         th:text="${room.lastMessageTime != null} ? ${#temporals.format(room.lastMessageTime, 'MM/dd HH:mm')} : ''"></div>
+                    <div th:if="${room.unreadCount > 0}"
+                         class="dm-unread-badge"
+                         th:text="${room.unreadCount}"></div>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+</body>
+</html>

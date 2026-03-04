@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>게시물 작성</title>
+</head>
+<body>
+<h1>새 게시물 작성</h1>
+
+<form th:action="@{/post}" method="post" enctype="multipart/form-data">
+    <div>
+        <label>내용</label>
+        <textarea name="content" rows="5" required></textarea>
+    </div>
+
+    <div>
+        <label>이미지</label>
+        <input type="file" name="multipartFile" accept="image/*">
+    </div>
+
+    <div>
+        <label>공개 여부</label>
+        <select name="pubOrNot">
+            <option value="PUB">공개</option>
+            <option value="PRIVATE">비공개</option>
+        </select>
+    </div>
+
+    <button type="submit">등록</button>
+    <a href="/post/my">취소</a>
+</form>
+<th:block th:replace="~{noti :: notiScript}"></th:block>
+</body>
+</html>

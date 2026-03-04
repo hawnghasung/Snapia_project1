@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>게시물 상세</title>
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <style>
+    .heart { font-size: 24px; cursor: pointer; border: none; background: none; }
+  </style>
+</head>
+<body>
+<h1>게시물 상세</h1>
+
+<div>
+  <p>작성자: <span th:text="${post.users.snapiaId}">작성자</span></p>
+  <p th:text="${post.content}">내용</p>
+  <img th:if="${post.postImgUrl}" th:src="@{'/upload/' + ${post.postImgUrl}}">
+  <div>
+    <button class="heart" th:onclick="'toggleLike(event, ' + ${post.pid} + ')'">
+      <span id="heart-icon" th:text="${isLiked} ? '❤️' : '🤍'">🤍</span>
+    </button>
+    <span>좋아요 <span id="like-count" th:text="${likeCount}">0</span>개</span>
+  </div>
+  <p>작성일: <span th:text="${post.createdAt}">날짜</span></p>
+</div>
+
+<div>
+  <a th:href="@{/post/{pid}/edit(pid=${post.pid})}">수정</a>
+  <form th:action="@{/post/{pid}/delete(pid=${post.pid})}" method="post">
+    <button type="submit">삭제</button>
+  </form>
+</div>
+
+<h3>댓글</h3>
+<div th:each="comment : ${comments}">
+  <p><strong th:text="${comment.users.snapiaId}">사용자</strong></p>
+  <p th:text="${comment.content}">댓글 내용</p>
+  <p th:text="${comment.createdAt}">작성일</p>
+</div>
+
+<a href="/post/my">목록으로</a>
+
+<script>
+  function toggleLike(event, pid) {
+    event.preventDefault();
+    fetch(`/post/${pid}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    })
+            .then(response => response.json())
+            .then(data => {
+              document.getElementById('heart-icon').textContent = data.isLiked ? '❤️' : '🤍';
+              document.getElementById('like-count').textContent = data.likeCount;
+            })
+            .catch(error => console.error('Error:', error));
+  }
+</script>
+
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>팔로워</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fafafa; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background-color: #fff; border-radius: 12px; width: 400px; max-height: 400px; display: flex; flex-direction: column; }
+        .modal-header { padding: 16px; text-align: center; border-bottom: 1px solid #dbdbdb; position: relative; }
+        .modal-header h2 { font-size: 16px; font-weight: 600; }
+        .modal-close { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 24px; cursor: pointer; color: #000; }
+        .modal-body { overflow-y: auto; flex: 1; }
+        .follower-item { display: flex; align-items: center; padding: 8px 16px; }
+        .follower-item:hover { background-color: #fafafa; }
+        .follower-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 1px solid #dbdbdb; }
+        .follower-info { flex: 1; }
+        .follower-username { font-size: 14px; font-weight: 600; color: #000; text-decoration: none; }
+        .follower-username:hover { text-decoration: underline; }
+        .follower-name { font-size: 14px; color: #8e8e8e; }
+        .follow-btn { padding: 7px 16px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; }
+        .follow-btn.following { background-color: #efefef; color: #000; }
+        .follow-btn.not-following { background-color: #0095f6; color: #fff; }
+        .follow-btn:hover { opacity: 0.7; }
+        .no-followers { text-align: center; padding: 60px 20px; color: #8e8e8e; }
+    </style>
+</head>
+<body>
+<div class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>팔로워</h2>
+            <button class="modal-close" onclick="window.history.back()">×</button>
+        </div>
+        <div class="modal-body">
+            <div th:if="${followers != null and !#lists.isEmpty(followers)}">
+                <div class="follower-item" th:each="follower : ${followers}">
+                    <img th:if="${follower.profileImgUrl != null}" th:src="@{'/upload/' + ${follower.profileImgUrl}}" class="follower-avatar" alt="프로필">
+                    <img th:unless="${follower.profileImgUrl != null}" src="/images/default_profile.png" class="follower-avatar" alt="기본 프로필">
+                    <div class="follower-info">
+                        <a th:href="@{/profile/{snapiaId}(snapiaId=${follower.snapiaId})}" class="follower-username" th:text="${follower.snapiaId}">username</a>
+                        <div class="follower-name" th:text="${follower.snapiaId}">name</div>
+                    </div>
+                    <button th:if="${follower.equalUserState == 0}"
+                            th:class="${follower.followState == 1} ? 'follow-btn following' : 'follow-btn not-following'"
+                            th:data-user-id="${follower.userId}"
+                            th:onclick="toggleFollow(this, [[${follower.userId}]])"
+                            th:text="${follower.followState == 1} ? '팔로잉' : '팔로우'">팔로우</button>
+                </div>
+            </div>
+            <div class="no-followers" th:if="${followers == null or #lists.isEmpty(followers)}">
+                <p>팔로워가 없습니다</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleFollow(button, userId) {
+        const isFollowing = button.classList.contains('following');
+        if (isFollowing) {
+            if (!confirm('언팔로우하시겠습니까?')) return;
+            fetch(`/follow/${userId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) { button.classList.replace('following', 'not-following'); button.textContent = '팔로우'; }
+                    else { alert(data.message); }
+                })
+                .catch(error => { console.error('Error:', error); alert('오류가 발생했습니다.'); });
+        } else {
+            fetch(`/follow/${userId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) { button.classList.replace('not-following', 'following'); button.textContent = '팔로잉'; }
+                    else { alert(data.message); }
+                })
+                .catch(error => { console.error('Error:', error); alert('오류가 발생했습니다.'); });
+        }
+    }
+</script>
+
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+</body>
+</html>

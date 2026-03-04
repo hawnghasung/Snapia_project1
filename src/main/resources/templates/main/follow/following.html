@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>팔로잉</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fafafa; }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.65); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background-color: #fff; border-radius: 12px; width: 400px; max-height: 400px; display: flex; flex-direction: column; }
+        .modal-header { padding: 16px; text-align: center; border-bottom: 1px solid #dbdbdb; position: relative; }
+        .modal-header h2 { font-size: 16px; font-weight: 600; }
+        .modal-close { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 24px; cursor: pointer; color: #000; }
+        .modal-body { overflow-y: auto; flex: 1; }
+        .following-item { display: flex; align-items: center; padding: 8px 16px; }
+        .following-item:hover { background-color: #fafafa; }
+        .following-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 1px solid #dbdbdb; }
+        .following-info { flex: 1; }
+        .following-username { font-size: 14px; font-weight: 600; color: #000; text-decoration: none; }
+        .following-username:hover { text-decoration: underline; }
+        .following-name { font-size: 14px; color: #8e8e8e; }
+        .follow-btn { padding: 7px 16px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; background-color: #efefef; color: #000; }
+        .follow-btn:hover { opacity: 0.7; }
+        .no-following { text-align: center; padding: 60px 20px; color: #8e8e8e; }
+    </style>
+</head>
+<body>
+<div class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h2>팔로잉</h2>
+            <button class="modal-close" onclick="window.history.back()">×</button>
+        </div>
+        <div class="modal-body">
+            <div th:if="${following != null and !#lists.isEmpty(following)}">
+                <div class="following-item" th:each="follow : ${following}">
+                    <img th:if="${follow.profileImgUrl != null}" th:src="@{'/upload/' + ${follow.profileImgUrl}}" class="following-avatar" alt="프로필">
+                    <img th:unless="${follow.profileImgUrl != null}" src="/images/default_profile.png" class="following-avatar" alt="기본 프로필">
+                    <div class="following-info">
+                        <a th:href="@{/profile/{snapiaId}(snapiaId=${follow.snapiaId})}" class="following-username" th:text="${follow.snapiaId}">username</a>
+                        <div class="following-name" th:text="${follow.snapiaId}">name</div>
+                    </div>
+                    <button th:if="${follow.equalUserState == 0}" class="follow-btn" th:data-user-id="${follow.userId}" th:onclick="unfollow(this, [[${follow.userId}]])">팔로잉</button>
+                </div>
+            </div>
+            <div class="no-following" th:if="${following == null or #lists.isEmpty(following)}">
+                <p>팔로잉이 없습니다</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function unfollow(button, userId) {
+        if (!confirm('언팔로우하시겠습니까?')) return;
+        fetch(`/follow/${userId}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' } })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.closest('.following-item').remove();
+                    if (!document.querySelectorAll('.following-item').length) location.reload();
+                } else { alert(data.message); }
+            })
+            .catch(error => { console.error('Error:', error); alert('오류가 발생했습니다.'); });
+    }
+</script>
+
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+</body>
+</html>

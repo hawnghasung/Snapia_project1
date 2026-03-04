@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snapia</title>
+
+    <!-- SockJS + STOMP -->
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+    <!-- 헤더 CSS -->
+    <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #fafafa;
+            color: #262626;
+        }
+
+        /* 메인 컨텐츠 */
+        main {
+            max-width: 935px;
+            margin: 80px auto 0;
+            padding: 30px 20px;
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 30px;
+        }
+
+        /* 스토리 섹션 */
+        .stories-container {
+            background-color: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 8px;
+            padding: 16px 0;
+            margin-bottom: 24px;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        .stories-container::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .stories-container::-webkit-scrollbar-thumb {
+            background-color: #dbdbdb;
+            border-radius: 3px;
+        }
+
+        .stories-list {
+            display: inline-flex;
+            gap: 16px;
+            padding: 0 16px;
+        }
+
+        .story-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .story-img-wrapper {
+            width: 66px;
+            height: 66px;
+            border-radius: 50%;
+            padding: 2px;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+        }
+
+        .story-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+        }
+
+        .story-username {
+            font-size: 12px;
+            max-width: 74px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .no-stories {
+            text-align: center;
+            color: #8e8e8e;
+            padding: 16px;
+            font-size: 14px;
+        }
+
+        /* 피드 게시물 */
+        .feed-container {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .post-card {
+            background-color: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .post-header {
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .post-user-info {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .post-user-img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #dbdbdb;
+        }
+
+        .post-username {
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #262626;
+        }
+
+        .post-username:hover {
+            text-decoration: underline;
+        }
+
+        .post-options {
+            cursor: pointer;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .post-image {
+            width: 100%;
+            max-height: 600px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .post-actions {
+            padding: 8px 16px;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .action-left {
+            display: flex;
+            gap: 16px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            padding: 8px;
+        }
+
+        .action-btn:hover {
+            opacity: 0.5;
+        }
+
+        .like-btn {
+            color: #262626;
+        }
+
+        .like-btn.liked {
+            color: #ed4956;
+        }
+
+        .post-likes {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .post-content {
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .post-content .username {
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .post-comments-link {
+            color: #8e8e8e;
+            font-size: 14px;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .post-comments-link:hover {
+            text-decoration: underline;
+        }
+
+        .post-time {
+            color: #8e8e8e;
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        .no-posts {
+            background-color: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 8px;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .no-posts h3 {
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+
+        .no-posts p {
+            color: #8e8e8e;
+            font-size: 14px;
+        }
+
+        /* 사이드바 */
+        .sidebar {
+            position: sticky;
+            top: 100px;
+            align-self: start;
+        }
+
+        .user-profile-widget {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .user-profile-img {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-snapia-id {
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #262626;
+        }
+
+        .user-snapia-id:hover {
+            text-decoration: underline;
+        }
+
+        .user-name {
+            font-size: 14px;
+            color: #8e8e8e;
+        }
+
+        .switch-btn {
+            font-size: 12px;
+            font-weight: 600;
+            color: #0095f6;
+            text-decoration: none;
+        }
+
+        .switch-btn:hover {
+            color: #00376b;
+        }
+
+        .login-prompt {
+            background-color: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .login-prompt p {
+            margin-bottom: 16px;
+            color: #262626;
+        }
+
+        .login-link {
+            display: inline-block;
+            background-color: #0095f6;
+            color: #fff;
+            padding: 8px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .login-link:hover {
+            background-color: #1877f2;
+        }
+
+        .suggestions-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .suggestions-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #8e8e8e;
+        }
+
+        .see-all-link {
+            font-size: 12px;
+            font-weight: 600;
+            color: #262626;
+            text-decoration: none;
+        }
+
+        .see-all-link:hover {
+            color: #8e8e8e;
+        }
+
+        .suggestions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .suggestion-item {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .suggestion-img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        .suggestion-info {
+            flex: 1;
+        }
+
+        .suggestion-username {
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            color: #262626;
+            display: block;
+        }
+
+        .suggestion-username:hover {
+            text-decoration: underline;
+        }
+
+        .suggestion-desc {
+            font-size: 12px;
+            color: #8e8e8e;
+        }
+
+        .follow-btn {
+            background: none;
+            border: none;
+            color: #0095f6;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .follow-btn:hover {
+            color: #00376b;
+        }
+
+        .follow-btn:disabled {
+            color: #8e8e8e;
+        }
+
+        .no-suggestions {
+            color: #8e8e8e;
+            font-size: 14px;
+        }
+
+        /* 푸터 */
+        .footer {
+            margin-top: 30px;
+            font-size: 11px;
+            color: #c7c7c7;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .footer-links a {
+            color: #c7c7c7;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-copyright {
+            color: #c7c7c7;
+        }
+
+        /* 반응형 */
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 768px) {
+            main {
+                margin-top: 60px;
+                padding: 0;
+            }
+
+            .stories-container,
+            .post-card {
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ✅ 헤더 fragment -->
+<th:block th:replace="~{fragments/header :: header}"></th:block>
+
+<!-- 메인 컨텐츠 -->
+<main>
+    <!-- 피드 영역 -->
+    <div>
+        <!-- ⭐ 스토리 섹션 (AJAX로 동적 로드) -->
+        <div sec:authorize="isAuthenticated()">
+            <div class="stories-container" id="storiesContainer">
+                <div class="stories-list" id="storiesList">
+                    <p class="no-stories">스토리를 불러오는 중...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 피드 게시물 -->
+        <div class="feed-container">
+            <div th:if="${feedPosts != null and !feedPosts.isEmpty()}">
+                <div class="post-card" th:each="post : ${feedPosts}">
+                    <div class="post-header">
+                        <div class="post-user-info">
+                            <img th:src="${post.userProfileImageUrl != null ? '/upload/' + post.userProfileImageUrl : 'https://i.pravatar.cc/150?u=' + post.userUid}"
+                                 alt="profile"
+                                 class="post-user-img">
+                            <a th:href="@{/profile/{snapiaId}(snapiaId=${post.userSnapiaId})}"
+                               class="post-username"
+                               th:text="${post.userSnapiaId}">username</a>
+                        </div>
+                        <span class="post-options">⋯</span>
+                    </div>
+
+                    <a th:href="@{/post/{pid}(pid=${post.pid})}">
+                        <img th:src="@{'/upload/' + ${post.postImgUrl}}"
+                             alt="post image"
+                             class="post-image">
+                    </a>
+
+                    <div class="post-actions">
+                        <div class="action-buttons">
+                            <div class="action-left">
+                                <button class="action-btn like-btn" th:data-post-id="${post.pid}">♡</button>
+                                <a th:href="@{/post/{pid}(pid=${post.pid})}" class="action-btn">💬</a>
+                                <button class="action-btn">📤</button>
+                            </div>
+                            <button class="action-btn bookmark-btn" th:data-post-id="${post.pid}">🔖</button>
+                        </div>
+
+                        <div class="post-likes">
+                            좋아요 <span class="like-count" th:text="${post.likeCount != null ? post.likeCount : 0}">0</span>개
+                        </div>
+
+                        <div class="post-content">
+                            <a th:href="@{/profile/{snapiaId}(snapiaId=${post.userSnapiaId})}"
+                               class="username"
+                               th:text="${post.userSnapiaId}">username</a>
+                            <span th:text="${post.content}">게시물 내용</span>
+                        </div>
+
+                        <a th:if="${post.commentCount != null and post.commentCount > 0}"
+                           th:href="@{/post/{pid}(pid=${post.pid})}"
+                           class="post-comments-link">
+                            댓글 <span th:text="${post.commentCount}">0</span>개 모두 보기
+                        </a>
+
+                        <div class="post-time" th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">작성 시간</div>
+                    </div>
+                </div>
+            </div>
+
+            <div th:if="${feedPosts == null or feedPosts.isEmpty()}" class="no-posts">
+                <h3>게시물이 없습니다</h3>
+                <p>팔로우할 친구를 찾아보세요!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 사이드바 -->
+    <div class="sidebar">
+        <div sec:authorize="isAuthenticated()">
+            <div class="user-profile-widget">
+                <a href="/profile">
+                    <img th:src="${#authentication.principal.users.profileImageUrl != null ? '/upload/' + #authentication.principal.users.profileImageUrl : 'https://i.pravatar.cc/150?u=me'}"
+                         alt="my profile"
+                         class="user-profile-img">
+                </a>
+                <div class="user-info">
+                    <a href="/profile"
+                       class="user-snapia-id"
+                       sec:authentication="principal.users.snapiaId">snapiaId</a>
+                    <div class="user-name" sec:authentication="principal.users.name">실제이름</div>
+                </div>
+                <a href="/profile/update" class="switch-btn">전환</a>
+            </div>
+        </div>
+
+        <div sec:authorize="isAnonymous()">
+            <div class="login-prompt">
+                <p>로그인하여 친구들의 소식을 확인하세요.</p>
+                <a href="/login" class="login-link">지금 로그인</a>
+            </div>
+        </div>
+
+        <div>
+            <div class="suggestions-header">
+                <span class="suggestions-title">회원님을 위한 추천</span>
+                <a href="/explore" class="see-all-link">모두 보기</a>
+            </div>
+
+            <div class="suggestions-list" th:if="${recommendedUsers != null and !recommendedUsers.isEmpty()}">
+                <div class="suggestion-item" th:each="user : ${recommendedUsers}">
+                    <a th:href="@{/profile/{snapiaId}(snapiaId=${user.snapiaId})}">
+                        <img th:src="${user.profileImageUrl != null ? '/upload/' + user.profileImageUrl : 'https://i.pravatar.cc/150?u=' + user.uid}"
+                             alt="recommended user"
+                             class="suggestion-img">
+                    </a>
+                    <div class="suggestion-info">
+                        <a th:href="@{/profile/{snapiaId}(snapiaId=${user.snapiaId})}"
+                           class="suggestion-username"
+                           th:text="${user.snapiaId}">username</a>
+                        <div class="suggestion-desc" th:text="${user.name != null ? user.name : 'Snapia 유저'}">Snapia 인기 유저</div>
+                    </div>
+                    <button class="follow-btn" th:data-user-id="${user.uid}">팔로우</button>
+                </div>
+            </div>
+
+            <div th:if="${recommendedUsers == null or recommendedUsers.isEmpty()}" class="no-suggestions">
+                추천할 유저가 없습니다.
+            </div>
+        </div>
+
+        <div class="footer">
+            <div class="footer-links">
+                <a href="/about">소개</a> ·
+                <a href="/help">도움말</a> ·
+                <a href="/press">홍보 센터</a> ·
+                <a href="/api">API</a> ·
+                <a href="/jobs">채용 정보</a> ·
+                <a href="/privacy">개인정보처리방침</a> ·
+                <a href="/terms">약관</a> ·
+                <a href="/locations">위치</a> ·
+                <a href="/language">언어</a>
+            </div>
+            <div class="footer-copyright">© 2026 SNAPIA FROM HASUNG</div>
+        </div>
+    </div>
+</main>
+
+<script>
+    // ⭐ 스토리 로드 (페이지 로드 시)
+    window.addEventListener('DOMContentLoaded', async function() {
+        await loadStories();
+    });
+
+    // ⭐ 스토리 불러오기
+    async function loadStories() {
+        try {
+            const response = await fetch('/story/following');
+            if (!response.ok) throw new Error('스토리 로드 실패');
+
+            const stories = await response.json();
+            displayStories(stories);
+        } catch (error) {
+            console.error('스토리 로드 오류:', error);
+            document.getElementById('storiesList').innerHTML =
+                '<p class="no-stories">스토리를 불러올 수 없습니다.</p>';
+        }
+    }
+
+    // ⭐ 스토리 표시
+    function displayStories(stories) {
+        const storiesList = document.getElementById('storiesList');
+
+        if (!stories || stories.length === 0) {
+            storiesList.innerHTML =
+                '<p class="no-stories">팔로우한 친구들의 스토리가 여기에 표시됩니다.</p>';
+            return;
+        }
+
+        // 사용자별로 그룹화 (한 사용자가 여러 스토리를 올릴 수 있으므로)
+        const storyGroups = {};
+        stories.forEach(story => {
+            if (!storyGroups[story.userId]) {
+                storyGroups[story.userId] = {
+                    userId: story.userId,
+                    snapiaId: story.snapiaId,
+                    profileImageUrl: story.profileImageUrl,
+                    stories: []
+                };
+            }
+            storyGroups[story.userId].stories.push(story);
+        });
+
+        // HTML 생성
+        let html = '';
+        Object.values(storyGroups).forEach(group => {
+            const latestStory = group.stories[0]; // 가장 최근 스토리
+            const profileImg = group.profileImageUrl
+                ? `/upload/${group.profileImageUrl}`
+                : `https://i.pravatar.cc/150?u=${group.userId}`;
+
+            html += `
+                <div class="story-item" onclick="goToStory(${latestStory.sid})">
+                    <div class="story-img-wrapper">
+                        <img src="${profileImg}"
+                             alt="${group.snapiaId}"
+                             class="story-img">
+                    </div>
+                    <span class="story-username">${group.snapiaId}</span>
+                </div>
+            `;
+        });
+
+        storiesList.innerHTML = html;
+    }
+
+    // ⭐ 스토리 뷰어로 이동
+    function goToStory(sid) {
+        window.location.href = `/story/${sid}`;
+    }
+
+    // 팔로우 버튼
+    document.querySelectorAll('.follow-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const followUserId = this.dataset.userId;
+            try {
+                const response = await fetch(`/follow/${followUserId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.success) {
+                    this.textContent = '팔로잉';
+                    this.disabled = true;
+                    this.style.color = '#8e8e8e';
+                } else {
+                    alert(result.message || '팔로우 실패');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('오류가 발생했습니다.');
+            }
+        });
+    });
+
+    // 좋아요 버튼
+    document.querySelectorAll('.like-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const postId = this.dataset.postId;
+            try {
+                const response = await fetch(`/post/${postId}/like`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const result = await response.json();
+                if (result.isLiked !== undefined) {
+                    this.textContent = result.isLiked ? '❤️' : '♡';
+                    this.classList.toggle('liked', result.isLiked);
+                    const likeCountSpan = this.closest('.post-actions').querySelector('.like-count');
+                    if (likeCountSpan) likeCountSpan.textContent = result.likeCount;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('오류가 발생했습니다.');
+            }
+        });
+    });
+</script>
+
+<!-- ✅ 헤더 JS fragment (검색 + 알림 + WebSocket) -->
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+
+</body>
+</html>

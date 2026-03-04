@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="ko">
+<head>
+    <th:block th:fragment="headerStyles">
+        <style>
+            /* 네비게이션 바 */
+            nav {
+                background-color: #fff;
+                border-bottom: 1px solid #dbdbdb;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 1000;
+            }
+
+            .nav-container {
+                max-width: 975px;
+                margin: 0 auto;
+                padding: 8px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .nav-logo {
+                font-family: 'Brush Script MT', cursive;
+                font-size: 28px;
+                font-weight: bold;
+                text-decoration: none;
+                color: #262626;
+            }
+
+            .nav-search {
+                flex: 0 1 250px;
+                position: relative;
+            }
+
+            .nav-search input {
+                width: 100%;
+                padding: 8px 16px;
+                border: 1px solid #dbdbdb;
+                border-radius: 8px;
+                background-color: #efefef;
+                font-size: 14px;
+                outline: none;
+            }
+
+            .nav-search input:focus {
+                background-color: #fff;
+                border-color: #a8a8a8;
+            }
+
+            /* 검색 드롭다운 */
+            .search-dropdown {
+                position: absolute;
+                top: 45px;
+                left: 0;
+                width: 100%;
+                max-height: 400px;
+                overflow-y: auto;
+                background-color: #fff;
+                border: 1px solid #dbdbdb;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                display: none;
+                z-index: 1001;
+            }
+
+            .search-dropdown.show {
+                display: block;
+            }
+
+            .search-result-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+
+            .search-result-item:hover {
+                background-color: #fafafa;
+            }
+
+            .search-result-img {
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 1px solid #dbdbdb;
+            }
+
+            .search-result-info {
+                flex: 1;
+            }
+
+            .search-result-id {
+                font-size: 14px;
+                font-weight: 600;
+                color: #262626;
+            }
+
+            .search-result-name {
+                font-size: 14px;
+                color: #8e8e8e;
+            }
+
+            .search-no-result {
+                padding: 20px;
+                text-align: center;
+                color: #8e8e8e;
+                font-size: 14px;
+            }
+
+            .search-loading {
+                padding: 20px;
+                text-align: center;
+                color: #8e8e8e;
+                font-size: 14px;
+            }
+
+            .nav-menu {
+                display: flex;
+                gap: 20px;
+                align-items: center;
+            }
+
+            .nav-menu a,
+            .nav-menu span {
+                text-decoration: none;
+                color: #262626;
+                cursor: pointer;
+                font-size: 24px;
+            }
+
+            .nav-menu a:hover,
+            .nav-menu span:hover {
+                opacity: 0.5;
+            }
+
+            .nav-profile-img {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 1px solid #dbdbdb;
+            }
+
+            .logout-btn {
+                background: none;
+                border: none;
+                color: #262626;
+                font-size: 14px;
+                cursor: pointer;
+                padding: 0;
+            }
+
+            .logout-btn:hover {
+                opacity: 0.5;
+            }
+
+            /* 알림 버튼 래퍼 */
+            .noti-wrapper {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+            }
+
+            .noti-btn {
+                background: none;
+                border: none;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 0;
+                color: #262626;
+                line-height: 1;
+            }
+
+            .noti-btn:hover {
+                opacity: 0.5;
+            }
+
+            /* 읽지 않은 알림 뱃지 */
+            .noti-badge {
+                position: absolute;
+                top: -4px;
+                right: -6px;
+                background-color: #ed4956;
+                color: #fff;
+                font-size: 10px;
+                font-weight: 700;
+                width: 16px;
+                height: 16px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                pointer-events: none;
+                display: none;
+            }
+
+            .noti-badge.visible {
+                display: flex;
+            }
+
+            /* 알림 드롭다운 */
+            .noti-dropdown {
+                position: absolute;
+                top: calc(100% + 12px);
+                right: -10px;
+                width: 400px;
+                background-color: #fff;
+                border: 1px solid #dbdbdb;
+                border-radius: 12px;
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+                display: none;
+                z-index: 1001;
+                overflow: hidden;
+            }
+
+            .noti-dropdown.show {
+                display: block;
+            }
+
+            .noti-dropdown-header {
+                padding: 14px 16px;
+                font-size: 16px;
+                font-weight: 700;
+                color: #262626;
+                border-bottom: 1px solid #efefef;
+            }
+
+            .noti-list {
+                max-height: 400px;
+                overflow-y: auto;
+            }
+
+            .noti-list::-webkit-scrollbar {
+                width: 4px;
+            }
+
+            .noti-list::-webkit-scrollbar-thumb {
+                background-color: #dbdbdb;
+                border-radius: 2px;
+            }
+
+            .noti-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                transition: background-color 0.15s;
+            }
+
+            .noti-item:hover {
+                background-color: #fafafa;
+            }
+
+            .noti-item.unread {
+                background-color: #f0f7ff;
+            }
+
+            .noti-item.unread:hover {
+                background-color: #e5f1ff;
+            }
+
+            .noti-avatar {
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 1px solid #dbdbdb;
+                flex-shrink: 0;
+                cursor: pointer;
+            }
+
+            .noti-content {
+                flex: 1;
+                font-size: 14px;
+                color: #262626;
+                line-height: 1.4;
+            }
+
+            .noti-content .noti-sender {
+                font-weight: 600;
+                cursor: pointer;
+            }
+
+            .noti-content .noti-sender:hover {
+                text-decoration: underline;
+            }
+
+            .noti-content .noti-time {
+                display: block;
+                font-size: 12px;
+                color: #8e8e8e;
+                margin-top: 2px;
+            }
+
+            /* 팔로우 요청 버튼 */
+            .noti-actions {
+                display: flex;
+                gap: 8px;
+                margin-top: 8px;
+            }
+
+            .noti-btn-accept,
+            .noti-btn-reject {
+                flex: 1;
+                padding: 6px 12px;
+                border-radius: 8px;
+                font-size: 13px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+                border: none;
+                outline: none;
+            }
+
+            .noti-btn-accept {
+                background-color: #0095f6;
+                color: white;
+            }
+
+            .noti-btn-accept:hover {
+                background-color: #1877f2;
+            }
+
+            .noti-btn-accept:disabled {
+                background-color: #b2dffc;
+                cursor: not-allowed;
+            }
+
+            .noti-btn-reject {
+                background-color: #efefef;
+                color: #262626;
+            }
+
+            .noti-btn-reject:hover {
+                background-color: #dbdbdb;
+            }
+
+            .noti-btn-reject:disabled {
+                background-color: #fafafa;
+                color: #8e8e8e;
+                cursor: not-allowed;
+            }
+
+            .noti-empty {
+                padding: 40px 20px;
+                text-align: center;
+                color: #8e8e8e;
+                font-size: 14px;
+            }
+
+            .noti-loading {
+                padding: 24px 20px;
+                text-align: center;
+                color: #8e8e8e;
+                font-size: 14px;
+            }
+
+            /* 드롭다운 화살표 */
+            .noti-dropdown::before {
+                content: '';
+                position: absolute;
+                top: -6px;
+                right: 18px;
+                width: 10px;
+                height: 10px;
+                background-color: #fff;
+                border-left: 1px solid #dbdbdb;
+                border-top: 1px solid #dbdbdb;
+                transform: rotate(45deg);
+            }
+
+            @media (max-width: 768px) {
+                .nav-search {
+                    display: none;
+                }
+
+                .noti-dropdown {
+                    width: 340px;
+                    right: -60px;
+                }
+            }
+        </style>
+    </th:block>
+</head>
+
+<body>
+
+<!-- ===== HEADER FRAGMENT ===== -->
+<nav th:fragment="header">
+    <div class="nav-container">
+        <a href="/main" class="nav-logo">Snapia</a>
+
+        <!-- 검색 -->
+        <div class="nav-search">
+            <input type="text" placeholder="검색" id="searchInput">
+            <div class="search-dropdown" id="searchDropdown"></div>
+        </div>
+
+        <!-- 메뉴 -->
+        <div class="nav-menu">
+            <a href="/main">🏠</a>
+
+            <div sec:authorize="isAuthenticated()" style="display:contents;">
+                <a href="/dm/list">💬</a>
+                <a href="/post/new">➕</a>
+                <span>🧭</span>
+
+                <!-- 알림 버튼 -->
+                <div class="noti-wrapper" id="notiWrapper">
+                    <button class="noti-btn" id="notiBtn" aria-label="알림">🔔</button>
+                    <span class="noti-badge" id="notiBadge"></span>
+
+                    <!-- 알림 드롭다운 -->
+                    <div class="noti-dropdown" id="notiDropdown">
+                        <div class="noti-dropdown-header">알림</div>
+                        <div class="noti-list" id="notiList">
+                            <div class="noti-loading">불러오는 중...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <form th:action="@{/logout}" method="post" style="display: inline;">
+                    <button type="submit" class="logout-btn">로그아웃</button>
+                </form>
+            </div>
+
+            <div sec:authorize="isAnonymous()" style="display:contents;">
+                <a href="/login" style="font-size: 14px; font-weight: 600;">로그인</a>
+            </div>
+
+            <div sec:authorize="isAuthenticated()" style="display:contents;">
+                <a href="/profile">
+                    <img th:src="${#authentication.principal.users.profileImageUrl != null
+                        ? '/upload/' + #authentication.principal.users.profileImageUrl
+                        : 'https://i.pravatar.cc/150?u=me'}"
+                         alt="profile"
+                         class="nav-profile-img">
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- ===== 알림 + 검색 JS FRAGMENT ===== -->
+<th:block th:fragment="headerScript">
+    <script th:inline="javascript">
+        /* ──────────────────────────────
+           현재 로그인 유저 uid (Thymeleaf 주입)
+        ────────────────────────────── */
+        const CURRENT_UID = /*[[${#authentication.principal?.users?.uid}]]*/ null;
+
+        /* ──────────────────────────────
+           검색 자동완성
+        ────────────────────────────── */
+        const searchInput    = document.getElementById('searchInput');
+        const searchDropdown = document.getElementById('searchDropdown');
+        let searchTimeout;
+
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                const query = this.value.trim();
+                clearTimeout(searchTimeout);
+
+                if (!query) {
+                    searchDropdown.classList.remove('show');
+                    searchDropdown.innerHTML = '';
+                    return;
+                }
+
+                searchDropdown.innerHTML = '<div class="search-loading">검색 중...</div>';
+                searchDropdown.classList.add('show');
+
+                searchTimeout = setTimeout(async () => {
+                    try {
+                        const res   = await fetch(`/search?word=${encodeURIComponent(query)}`);
+                        const users = await res.json();
+                        renderSearchResults(users);
+                    } catch (e) {
+                        searchDropdown.innerHTML = '<div class="search-no-result">오류가 발생했습니다.</div>';
+                    }
+                }, 300);
+            });
+
+            searchInput.addEventListener('focus', function () {
+                if (this.value.trim() && searchDropdown.innerHTML) {
+                    searchDropdown.classList.add('show');
+                }
+            });
+        }
+
+        function renderSearchResults(users) {
+            searchDropdown.innerHTML = '';
+            if (!users.length) {
+                searchDropdown.innerHTML = '<div class="search-no-result">검색 결과가 없습니다.</div>';
+                return;
+            }
+            users.forEach(user => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                const img = user.profileImageUrl
+                    ? `/upload/${user.profileImageUrl}`
+                    : `https://i.pravatar.cc/150?u=${user.uid}`;
+                item.innerHTML = `
+                <img src="${img}" class="search-result-img" alt="${user.snapiaId}">
+                <div class="search-result-info">
+                    <div class="search-result-id">${user.snapiaId}</div>
+                    <div class="search-result-name">${user.name || ''}</div>
+                </div>`;
+                item.addEventListener('click', () => {
+                    window.location.href = `/profile/${user.snapiaId}`;
+                });
+                searchDropdown.appendChild(item);
+            });
+        }
+
+        document.addEventListener('click', function (e) {
+            const searchContainer = document.querySelector('.nav-search');
+            if (searchContainer && !searchContainer.contains(e.target)) {
+                searchDropdown?.classList.remove('show');
+            }
+        });
+
+        /* ──────────────────────────────
+           알림 드롭다운
+        ────────────────────────────── */
+        const notiBtn      = document.getElementById('notiBtn');
+        const notiDropdown = document.getElementById('notiDropdown');
+        const notiList     = document.getElementById('notiList');
+        const notiBadge    = document.getElementById('notiBadge');
+
+        let notiLoaded  = false;
+        let unreadCount = 0;
+
+        if (notiBtn) {
+            notiBtn.addEventListener('click', async function (e) {
+                e.stopPropagation();
+                const isOpen = notiDropdown.classList.toggle('show');
+                if (isOpen && !notiLoaded) {
+                    await loadNotifications();
+                }
+                if (isOpen) {
+                    // 드롭다운 열면 뱃지 초기화
+                    unreadCount = 0;
+                    updateBadge();
+                }
+            });
+        }
+
+        document.addEventListener('click', function (e) {
+            const wrapper = document.getElementById('notiWrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                notiDropdown?.classList.remove('show');
+            }
+        });
+
+        async function loadNotifications() {
+            if (!CURRENT_UID) return;
+            notiList.innerHTML = '<div class="noti-loading">불러오는 중...</div>';
+
+            try {
+                const res   = await fetch(`/noti/${CURRENT_UID}`);
+                const notis = await res.json();
+                notiLoaded = true;
+                renderNotifications(notis);
+            } catch (e) {
+                console.error('알림 로드 실패:', e);
+                notiList.innerHTML = '<div class="noti-empty">알림을 불러오지 못했습니다.</div>';
+            }
+        }
+
+        function renderNotifications(notis) {
+            notiList.innerHTML = '';
+            if (!notis.length) {
+                notiList.innerHTML = '<div class="noti-empty">최근 3일간 알림이 없습니다.</div>';
+                return;
+            }
+            notis.forEach(noti => appendNotiItem(noti, false));
+        }
+
+        function appendNotiItem(noti, isNew = false) {
+            const item = document.createElement('div');
+            item.className = 'noti-item' + (isNew ? ' unread' : '');
+            item.dataset.notiId = noti.notid || '';
+            item.dataset.senderUid = noti.senderUid || '';
+
+            const avatarSrc = noti.senderProfileImageUrl
+                ? `/upload/${noti.senderProfileImageUrl}`
+                : `https://i.pravatar.cc/150?u=${noti.senderUid || noti.senderSnapiaId}`;
+
+            let typeText = '';
+            let showButtons = false;
+
+            // 알림 타입에 따른 텍스트 및 버튼 표시 여부
+            if (noti.notificationType === 'FOLLOW_REQUEST') {
+                typeText = '님이 팔로우 요청을 보냈습니다.';
+                showButtons = true;
+            } else if (noti.notificationType === 'FOLLOW') {
+                typeText = '님이 회원님을 팔로우했습니다.';
+            } else if (noti.notificationType === 'FOLLOW_ACCEPTED') {
+                typeText = '님이 팔로우 요청을 수락했습니다.';
+            } else {
+                typeText = '님이 알림을 보냈습니다.';
+            }
+
+            const timeText = isNew ? '방금' : (noti.createdAt || '');
+
+            item.innerHTML = `
+            <img src="${avatarSrc}"
+                 class="noti-avatar"
+                 alt="${noti.senderSnapiaId}"
+                 onclick="goToProfile(event, '${noti.senderSnapiaId}')">
+            <div class="noti-content">
+                <div>
+                    <span class="noti-sender" onclick="goToProfile(event, '${noti.senderSnapiaId}')">${noti.senderSnapiaId}</span>${typeText}
+                </div>
+                <span class="noti-time">${timeText}</span>
+                ${showButtons ? `
+                <div class="noti-actions">
+                    <button class="noti-btn-accept" onclick="handleFollowRequest(event, ${noti.senderUid}, 'accept', this)">
+                        수락
+                    </button>
+                    <button class="noti-btn-reject" onclick="handleFollowRequest(event, ${noti.senderUid}, 'decline', this)">
+                        거절
+                    </button>
+                </div>
+                ` : ''}
+            </div>`;
+
+            // 새 알림은 맨 위에, 과거 알림은 뒤에 추가
+            if (isNew) {
+                notiList.prepend(item);
+            } else {
+                notiList.appendChild(item);
+            }
+        }
+
+        // 프로필로 이동
+        function goToProfile(event, snapiaId) {
+            event.stopPropagation();
+            window.location.href = `/profile/${snapiaId}`;
+        }
+
+        // 팔로우 요청 수락/거절 처리
+        async function handleFollowRequest(event, senderUid, action, button) {
+            event.stopPropagation();
+
+            if (!senderUid) return;
+
+            // 버튼 비활성화
+            const acceptBtn = button.parentElement.querySelector('.noti-btn-accept');
+            const rejectBtn = button.parentElement.querySelector('.noti-btn-reject');
+            if (acceptBtn) acceptBtn.disabled = true;
+            if (rejectBtn) rejectBtn.disabled = true;
+
+            try {
+                const endpoint = action === 'accept'
+                    ? `/follow/${senderUid}/accept`
+                    : `/follow/${senderUid}/decline`;
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('요청 처리 실패');
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 알림 아이템 제거
+                    const notiItem = button.closest('.noti-item');
+                    if (notiItem) {
+                        notiItem.style.transition = 'opacity 0.3s';
+                        notiItem.style.opacity = '0';
+                        setTimeout(() => {
+                            notiItem.remove();
+
+                            // 알림이 없으면 빈 메시지 표시
+                            if (!notiList.querySelector('.noti-item')) {
+                                notiList.innerHTML = '<div class="noti-empty">최근 3일간 알림이 없습니다.</div>';
+                            }
+                        }, 300);
+                    }
+
+                    console.log(action === 'accept' ? '팔로우 요청 수락됨' : '팔로우 요청 거절됨');
+                } else {
+                    alert(data.message || '요청 처리에 실패했습니다.');
+                    if (acceptBtn) acceptBtn.disabled = false;
+                    if (rejectBtn) rejectBtn.disabled = false;
+                }
+            } catch (error) {
+                console.error('팔로우 요청 처리 오류:', error);
+                alert('오류가 발생했습니다. 다시 시도해주세요.');
+                if (acceptBtn) acceptBtn.disabled = false;
+                if (rejectBtn) rejectBtn.disabled = false;
+            }
+        }
+
+        function updateBadge() {
+            if (!notiBadge) return;
+            if (unreadCount > 0) {
+                notiBadge.textContent = unreadCount > 9 ? '9+' : unreadCount;
+                notiBadge.classList.add('visible');
+            } else {
+                notiBadge.classList.remove('visible');
+            }
+        }
+
+        /* ──────────────────────────────
+           WebSocket (실시간 알림)
+        ────────────────────────────── */
+        if (CURRENT_UID && typeof SockJS !== 'undefined' && typeof Stomp !== 'undefined') {
+            const socket = new SockJS('/ws');
+            const stompClient = Stomp.over(socket);
+            stompClient.debug = null; // 콘솔 로그 끄기
+
+            stompClient.connect({}, function () {
+                console.log('WebSocket 연결 성공');
+
+                stompClient.subscribe(`/s/noti/${CURRENT_UID}`, function (message) {
+                    const noti = JSON.parse(message.body);
+                    console.log('실시간 알림 수신:', noti);
+
+                    // 실시간 알림을 드롭다운 맨 위에 추가
+                    if (notiLoaded) {
+                        // 빈 상태 메시지 제거
+                        const empty = notiList.querySelector('.noti-empty');
+                        if (empty) empty.remove();
+                        appendNotiItem(noti, true);
+                    }
+
+                    // 드롭다운이 닫혀있을 때만 뱃지 증가
+                    if (!notiDropdown.classList.contains('show')) {
+                        unreadCount++;
+                        updateBadge();
+                    }
+                });
+            }, function (error) {
+                console.warn('WebSocket 연결 실패:', error);
+            });
+        }
+    </script>
+</th:block>
+
+</body>
+</html>

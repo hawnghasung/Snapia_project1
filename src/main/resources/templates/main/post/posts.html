@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>내 게시물</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+</head>
+<body>
+<h1>내 게시물</h1>
+<a th:href="@{/post/new}">새 게시물 작성</a>
+
+<div th:each="post : ${posts}">
+    <h3 th:text="${post.content}">내용</h3>
+    <img th:if="${post.postImgUrl}" th:src="@{'/upload/' + ${post.postImgUrl}}">
+    <p th:text="${post.createdAt}">작성일</p>
+    <a th:href="@{/post/{pid}(pid=${post.pid})}">상세보기</a>
+</div>
+
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+</body>
+</html>

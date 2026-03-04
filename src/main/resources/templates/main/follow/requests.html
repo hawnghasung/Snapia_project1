@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>팔로우 요청</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fafafa; }
+        .container { max-width: 600px; margin: 0 auto; padding: 30px 20px; }
+        .header { background-color: #fff; border: 1px solid #dbdbdb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+        .header p { font-size: 14px; color: #8e8e8e; }
+        .requests-list { background-color: #fff; border: 1px solid #dbdbdb; border-radius: 8px; }
+        .request-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #efefef; }
+        .request-item:last-child { border-bottom: none; }
+        .request-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 1px solid #dbdbdb; }
+        .request-info { flex: 1; }
+        .request-username { font-size: 14px; font-weight: 600; color: #000; text-decoration: none; display: block; margin-bottom: 4px; }
+        .request-username:hover { text-decoration: underline; }
+        .request-message { font-size: 12px; color: #8e8e8e; }
+        .request-actions { display: flex; gap: 8px; }
+        .btn { padding: 7px 16px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; }
+        .btn-accept { background-color: #0095f6; color: #fff; }
+        .btn-accept:hover { background-color: #1877f2; }
+        .btn-decline { background-color: #efefef; color: #000; }
+        .btn-decline:hover { background-color: #dbdbdb; }
+        .no-requests { text-align: center; padding: 60px 20px; background-color: #fff; border: 1px solid #dbdbdb; border-radius: 8px; }
+        .no-requests-icon { font-size: 48px; margin-bottom: 16px; }
+        .no-requests h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+        .no-requests p { font-size: 14px; color: #8e8e8e; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>팔로우 요청</h1>
+        <p>회원님을 팔로우하려는 요청</p>
+    </div>
+
+    <div th:if="${requests != null and !#lists.isEmpty(requests)}" class="requests-list">
+        <div class="request-item" th:each="request : ${requests}" th:data-user-id="${request.userId}">
+            <img th:if="${request.profileImgUrl != null}" th:src="@{'/upload/' + ${request.profileImgUrl}}" class="request-avatar" alt="프로필">
+            <img th:unless="${request.profileImgUrl != null}" src="/images/default_profile.png" class="request-avatar" alt="기본 프로필">
+            <div class="request-info">
+                <a th:href="@{/profile/{snapiaId}(snapiaId=${request.snapiaId})}" class="request-username" th:text="${request.snapiaId}">username</a>
+                <div class="request-message">회원님을 팔로우하려고 합니다</div>
+            </div>
+            <div class="request-actions">
+                <button class="btn btn-accept" th:onclick="acceptRequest([[${request.userId}]])">수락</button>
+                <button class="btn btn-decline" th:onclick="declineRequest([[${request.userId}]])">삭제</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="no-requests" th:if="${requests == null or #lists.isEmpty(requests)}">
+        <div class="no-requests-icon">👥</div>
+        <h2>팔로우 요청 없음</h2>
+        <p>회원님을 팔로우하려는 요청이 없습니다</p>
+    </div>
+</div>
+
+<script>
+    function acceptRequest(userId) {
+        fetch(`/follow/${userId}/accept`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const item = document.querySelector(`[data-user-id="${userId}"]`);
+                    if (item) {
+                        item.style.transition = 'opacity 0.3s';
+                        item.style.opacity = '0';
+                        setTimeout(() => { item.remove(); if (!document.querySelectorAll('.request-item').length) location.reload(); }, 300);
+                    }
+                } else { alert(data.message); }
+            })
+            .catch(error => { console.error('Error:', error); alert('오류가 발생했습니다.'); });
+    }
+
+    function declineRequest(userId) {
+        if (!confirm('이 요청을 삭제하시겠습니까?')) return;
+        fetch(`/follow/${userId}/decline`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const item = document.querySelector(`[data-user-id="${userId}"]`);
+                    if (item) {
+                        item.style.transition = 'opacity 0.3s';
+                        item.style.opacity = '0';
+                        setTimeout(() => { item.remove(); if (!document.querySelectorAll('.request-item').length) location.reload(); }, 300);
+                    }
+                } else { alert(data.message); }
+            })
+            .catch(error => { console.error('Error:', error); alert('오류가 발생했습니다.'); });
+    }
+</script>
+
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+</body>
+</html>
