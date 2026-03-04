@@ -1,37 +1,93 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>게시물 수정</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시물 수정 - Snapia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    </style>
 </head>
-<body>
-<h1>게시물 수정</h1>
+<body class="bg-gray-50">
 
-<form th:action="@{/post/{pid}(pid=${post.pid})}" method="post" enctype="multipart/form-data">
-    <div>
-        <label>내용</label>
-        <textarea name="content" rows="5" th:text="${post.content}" required></textarea>
+<th:block th:replace="~{fragments/header :: header}"></th:block>
+
+<div class="mt-20 max-w-xl mx-auto px-5 py-8">
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200">
+            <span class="text-base font-semibold text-gray-800">게시물 수정</span>
+        </div>
+
+        <form th:action="@{/post/{pid}(pid=${post.pid})}" method="post" enctype="multipart/form-data">
+            <div class="p-6 flex flex-col gap-5">
+
+                <!-- 현재 이미지 -->
+                <div th:if="${post.postImgUrl}">
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">현재 이미지</label>
+                    <div class="rounded-lg overflow-hidden border border-gray-200">
+                        <img th:src="@{'/upload/' + ${post.postImgUrl}}" alt="현재 이미지"
+                             class="w-full max-h-64 object-contain block">
+                    </div>
+                </div>
+
+                <!-- 새 이미지 -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">새 이미지 (변경 시)</label>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
+                         onclick="document.getElementById('newFileInput').click()">
+                        <div class="text-sm text-gray-500">🖼️ 클릭하여 새 이미지 선택</div>
+                    </div>
+                    <input type="file" id="newFileInput" name="multipartFile" accept="image/*" class="hidden" onchange="previewNewImage(event)">
+                    <img id="newPreviewImg" class="hidden w-full max-h-52 object-contain rounded-lg mt-3" alt="새 미리보기">
+                </div>
+
+                <!-- 내용 -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">내용</label>
+                    <textarea name="content" rows="5"
+                              class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 resize-none outline-none focus:border-gray-400 transition-colors"
+                              th:text="${post.content}" required></textarea>
+                </div>
+
+                <!-- 공개 여부 -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">공개 여부</label>
+                    <select name="pubOrNot" th:field="${post.pubOrNot}"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white outline-none focus:border-gray-400 transition-colors">
+                        <option value="PUB">🌐 공개</option>
+                        <option value="PRIVATE">🔒 비공개</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-gray-200 flex gap-2 justify-end">
+                <a th:href="@{/post/{pid}(pid=${post.pid})}"
+                   class="px-4 py-2 text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">취소</a>
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">수정 완료</button>
+            </div>
+        </form>
     </div>
-    <div>
-        <label>현재 이미지</label>
-        <img th:if="${post.postImgUrl}" th:src="@{'/upload/' + ${post.postImgUrl}}" width="200">
-    </div>
-    <div>
-        <label>새 이미지 (변경 시)</label>
-        <input type="file" name="multipartFile" accept="image/*">
-    </div>
-    <div>
-        <label>공개 여부</label>
-        <select name="pubOrNot" th:field="${post.pubOrNot}">
-            <option value="PUB">공개</option>
-            <option value="PRIVATE">비공개</option>
-        </select>
-    </div>
-    <button type="submit">수정</button>
-    <a th:href="@{/post/{pid}(pid=${post.pid})}">취소</a>
-</form>
+</div>
+
+<script>
+    function previewNewImage(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = document.getElementById('newPreviewImg');
+                img.src = e.target.result;
+                img.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+</script>
 
 <th:block th:replace="~{fragments/header :: headerScript}"></th:block>
 </body>

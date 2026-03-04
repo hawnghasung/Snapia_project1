@@ -27,4 +27,7 @@ public class StoryDTO {
 
     // 내가 이미 봤는지 여부 (선택)
     private Boolean isViewed;
+
+    @Builder.Default
+    private Boolean isOwner = false;
 }

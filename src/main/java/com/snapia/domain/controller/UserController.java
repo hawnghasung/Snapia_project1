@@ -3,6 +3,7 @@ package com.snapia.domain.controller;
 import com.snapia.domain.auth.PrincipalDetails;
 import com.snapia.domain.dto.ProfileDTO;
 import com.snapia.domain.dto.ProfilePostDTO;
+import com.snapia.domain.dto.StoryDTO;
 import com.snapia.domain.dto.UserDTO;
 import com.snapia.domain.entity.Users;
 import com.snapia.domain.service.FollowService;
@@ -41,10 +42,7 @@ public class UserController {
             log.info("회원 가입 실패 : " + bindingResult.hasErrors());
             return "main/join";
         }
-
         userService.signUp(userDTO);
-        log.info("signUpPost 들어온 데이터 : " + userDTO);
-
         return "redirect:/main";
     }
 
@@ -54,12 +52,10 @@ public class UserController {
         return "main/login";
     }
 
-    // 프로필 조회
+    // 내 프로필 조회
     @GetMapping("/profile")
     public String myProfile(Model model, @AuthenticationPrincipal PrincipalDetails principalDetails) {
-        if (principalDetails == null) {
-            return "redirect:/login";
-        }
+        if (principalDetails == null) return "redirect:/login";
 
         Users user = principalDetails.getUsers();
         model.addAttribute("user", user);
@@ -67,9 +63,7 @@ public class UserController {
         List<ProfilePostDTO> posts = userService.getProfilePosts(user.getUid());
         model.addAttribute("posts", posts);
 
-        // ⭐ 스토리 존재 여부 체크 - getMyStories()가 List를 반환하므로 비어있지 않은지 확인
-        boolean hasStory = !storyService.getMyStories(user.getUid()).isEmpty();
-        model.addAttribute("hasStory", hasStory);
+        setStoryAttributes(model, user.getUid());
 
         return "main/profile";
     }
@@ -77,9 +71,7 @@ public class UserController {
     // 프로필 수정 폼
     @GetMapping("/profile/update")
     public String updateGet(Model model, @AuthenticationPrincipal PrincipalDetails principalDetails) {
-        if (principalDetails == null) {
-            return "redirect:/login";
-        }
+        if (principalDetails == null) return "redirect:/login";
 
         ProfileDTO profileDTO = new ProfileDTO();
         profileDTO.setBio(principalDetails.getUsers().getBio());
@@ -90,20 +82,15 @@ public class UserController {
         profileDTO.setEmail(principalDetails.getUsers().getEmail());
 
         model.addAttribute("profile", profileDTO);
-
         return "main/update";
     }
 
     // 프로필 수정 처리
     @PostMapping("/profile/update")
     public String updatePost(ProfileDTO profileDTO, @AuthenticationPrincipal PrincipalDetails principalDetails) {
-        if (principalDetails == null) {
-            return "redirect:/login";
-        }
+        if (principalDetails == null) return "redirect:/login";
 
         userService.profileUpdate(profileDTO, principalDetails.getUsers().getUid());
-
-        // 세션 정보 업데이트
         principalDetails.getUsers().setSnapiaId(profileDTO.getSnapiaId());
         principalDetails.getUsers().setName(profileDTO.getName());
         principalDetails.getUsers().setBio(profileDTO.getBio());
@@ -113,37 +100,40 @@ public class UserController {
         return "redirect:/profile";
     }
 
+    // 타인 프로필 조회
     @GetMapping("/profile/{snapiaId}")
-    public String userProfile(@PathVariable String snapiaId, @AuthenticationPrincipal PrincipalDetails principalDetails, Model model) {
-        // 1. snapiaId로 유저 조회
+    public String userProfile(@PathVariable String snapiaId,
+                              @AuthenticationPrincipal PrincipalDetails principalDetails,
+                              Model model) {
         Users user = userService.findBySnapiaId(snapiaId);
-
-        // 2. 본인인지 확인
         boolean isMyProfile = principalDetails.getUsers().getUid().equals(user.getUid());
 
-        // 3. 게시물 조회
         List<ProfilePostDTO> posts = userService.getProfilePosts(user.getUid());
 
-        // 4. 팔로우 정보 (타인일 때만)
         if (!isMyProfile) {
             boolean isFollowing = followService.isFollowing(
-                    principalDetails.getUsers().getUid(),
-                    user.getUid()
-            );
+                    principalDetails.getUsers().getUid(), user.getUid());
             model.addAttribute("isFollowing", isFollowing);
         }
 
-        // 5. 팔로워/팔로잉 수
         model.addAttribute("followerCount", followService.getFollowerCount(user.getUid()));
         model.addAttribute("followingCount", followService.getFollowingCount(user.getUid()));
         model.addAttribute("isMyProfile", isMyProfile);
         model.addAttribute("user", user);
         model.addAttribute("posts", posts);
 
-        // ⭐ 스토리 존재 여부 체크
-        boolean hasStory = !storyService.getMyStories(user.getUid()).isEmpty();
-        model.addAttribute("hasStory", hasStory);
+        setStoryAttributes(model, user.getUid());
 
         return "main/profile";
+    }
+
+    // 스토리 관련 model 세팅 공통 메서드
+    private void setStoryAttributes(Model model, Long uid) {
+        List<StoryDTO> stories = storyService.getMyStories(uid);
+        boolean hasStory = !stories.isEmpty();
+        model.addAttribute("hasStory", hasStory);
+        if (hasStory) {
+            model.addAttribute("latestStoryId", stories.get(0).getSid());
+        }
     }
 }

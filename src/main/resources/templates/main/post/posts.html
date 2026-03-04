@@ -1,20 +1,56 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>내 게시물</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>내 게시물 - Snapia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    </style>
 </head>
-<body>
-<h1>내 게시물</h1>
-<a th:href="@{/post/new}">새 게시물 작성</a>
+<body class="bg-gray-50">
 
-<div th:each="post : ${posts}">
-    <h3 th:text="${post.content}">내용</h3>
-    <img th:if="${post.postImgUrl}" th:src="@{'/upload/' + ${post.postImgUrl}}">
-    <p th:text="${post.createdAt}">작성일</p>
-    <a th:href="@{/post/{pid}(pid=${post.pid})}">상세보기</a>
+<th:block th:replace="~{fragments/header :: header}"></th:block>
+
+<div class="mt-20 max-w-4xl mx-auto px-5 py-8">
+    <!-- 헤더 -->
+    <div class="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
+        <span class="text-base font-semibold text-gray-800">내 게시물</span>
+        <a href="/post/new"
+           class="px-4 py-1.5 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">+ 새 게시물</a>
+    </div>
+
+    <!-- 그리드 -->
+    <div th:if="${posts != null and !#lists.isEmpty(posts)}" class="grid grid-cols-3 gap-1">
+        <div th:each="post : ${posts}"
+             class="relative pb-[100%] bg-gray-100 overflow-hidden group cursor-pointer"
+             onclick="location.href='/post/[[${post.pid}]]'">
+            <img th:if="${post.postImgUrl}"
+                 th:src="@{'/upload/' + ${post.postImgUrl}}"
+                 alt="게시물"
+                 class="absolute inset-0 w-full h-full object-cover">
+            <div th:unless="${post.postImgUrl}"
+                 class="absolute inset-0 flex items-center justify-center bg-gray-100 text-gray-400 text-xs">이미지 없음</div>
+            <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center gap-6 opacity-0 group-hover:opacity-100">
+                <div class="flex items-center gap-1.5 text-white font-semibold text-sm">
+                    ❤️ <span th:text="${post.likeCount ?: 0}">0</span>
+                </div>
+                <div class="flex items-center gap-1.5 text-white font-semibold text-sm">
+                    💬 <span th:text="${post.commentCount ?: 0}">0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 게시물 없음 -->
+    <div th:if="${posts == null or #lists.isEmpty(posts)}" class="text-center py-20">
+        <div class="text-5xl mb-4">📷</div>
+        <div class="text-sm text-gray-400">아직 게시물이 없습니다</div>
+    </div>
 </div>
 
 <th:block th:replace="~{fragments/header :: headerScript}"></th:block>

@@ -1,6 +1,7 @@
 package com.snapia.domain.controller;
 
 import com.snapia.domain.auth.PrincipalDetails;
+import com.snapia.domain.dto.CommentResponseDTO;
 import com.snapia.domain.dto.PostDTO;
 import com.snapia.domain.entity.Comment;
 import com.snapia.domain.entity.Post;
@@ -48,7 +49,7 @@ public class PostController {
         Post post = postService.getPostById(pid);
         model.addAttribute("post", post);
 
-        List<Comment> comments = commentService.getCommentsByPost(pid);
+        List<CommentResponseDTO> comments = commentService.getCommentsByPost(pid, principalDetails.getUsers().getSnapiaId());
         model.addAttribute("comments", comments);
 
         Long likeCount = likesService.getLikeCount(pid);
@@ -68,7 +69,7 @@ public class PostController {
         return "main/post/createForm";
     }
 
-    // 게시물 등록
+    // 게시물 등록 → 내 프로필로 이동
     @PostMapping
     public String create(PostDTO postDTO, @AuthenticationPrincipal PrincipalDetails principalDetails) {
         if (principalDetails == null) {
@@ -78,7 +79,7 @@ public class PostController {
         String snapiaId = principalDetails.getUsers().getSnapiaId();
         postService.register(postDTO, snapiaId);
 
-        return "redirect:/post/my";
+        return "redirect:/profile/" + snapiaId;
     }
 
     // 게시물 수정 폼
@@ -91,7 +92,6 @@ public class PostController {
 
         Post post = postService.getPostById(pid);
 
-        // 본인 게시물인지 확인
         if (!post.getUsers().getSnapiaId().equals(principalDetails.getUsers().getSnapiaId())) {
             throw new IllegalArgumentException("본인의 게시물만 수정할 수 있습니다");
         }
@@ -100,7 +100,7 @@ public class PostController {
         return "main/post/editForm";
     }
 
-    // 게시물 수정
+    // 게시물 수정 → 내 프로필로 이동
     @PostMapping("/{pid}")
     public String update(@PathVariable Long pid, PostDTO postDTO,
                          @AuthenticationPrincipal PrincipalDetails principalDetails) {
@@ -111,10 +111,10 @@ public class PostController {
         String snapiaId = principalDetails.getUsers().getSnapiaId();
         postService.update(pid, postDTO, snapiaId);
 
-        return "redirect:/post/" + pid;
+        return "redirect:/profile/" + snapiaId;
     }
 
-    // 게시물 삭제
+    // 게시물 삭제 → 내 프로필로 이동
     @PostMapping("/{pid}/delete")
     public String delete(@PathVariable Long pid, @AuthenticationPrincipal PrincipalDetails principalDetails) {
         if (principalDetails == null) {
@@ -124,7 +124,7 @@ public class PostController {
         String snapiaId = principalDetails.getUsers().getSnapiaId();
         postService.delete(pid, snapiaId);
 
-        return "redirect:/post/my";
+        return "redirect:/profile/" + snapiaId;
     }
 
     // 좋아요 토글 (AJAX)

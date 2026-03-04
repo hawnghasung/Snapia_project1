@@ -1,47 +1,146 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>게시물 상세</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>게시물 상세 - Snapia</title>
   <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
   <style>
-    .heart { font-size: 24px; cursor: pointer; border: none; background: none; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .post-comments { scrollbar-width: thin; scrollbar-color: #dbdbdb transparent; }
+    .post-comments::-webkit-scrollbar { width: 4px; }
+    .post-comments::-webkit-scrollbar-thumb { background: #dbdbdb; border-radius: 2px; }
   </style>
 </head>
-<body>
-<h1>게시물 상세</h1>
+<body class="bg-gray-50">
 
-<div>
-  <p>작성자: <span th:text="${post.users.snapiaId}">작성자</span></p>
-  <p th:text="${post.content}">내용</p>
-  <img th:if="${post.postImgUrl}" th:src="@{'/upload/' + ${post.postImgUrl}}">
-  <div>
-    <button class="heart" th:onclick="'toggleLike(event, ' + ${post.pid} + ')'">
-      <span id="heart-icon" th:text="${isLiked} ? '❤️' : '🤍'">🤍</span>
-    </button>
-    <span>좋아요 <span id="like-count" th:text="${likeCount}">0</span>개</span>
+<th:block th:replace="~{fragments/header :: header}"></th:block>
+
+<div class="mt-14 flex justify-center items-center min-h-screen px-5 py-5">
+  <div class="bg-white border border-gray-200 rounded-lg max-w-4xl w-full flex flex-row shadow-sm">
+
+    <!-- 이미지 영역 -->
+    <div class="flex-1 min-h-96 bg-black flex items-center justify-center border-r border-gray-200 rounded-l-lg overflow-hidden">
+      <img th:if="${post.postImgUrl}"
+           th:src="@{'/upload/' + ${post.postImgUrl}}"
+           alt="게시물 이미지"
+           class="w-full h-full object-contain max-h-[600px]">
+      <span th:unless="${post.postImgUrl}" class="text-gray-500 text-sm">이미지 없음</span>
+    </div>
+
+    <!-- 우측 -->
+    <div class="w-80 flex flex-col flex-shrink-0">
+
+      <!-- 헤더 -->
+      <div class="flex items-center gap-2.5 px-4 py-3.5 border-b border-gray-100">
+        <button class="text-xl text-gray-700 hover:opacity-60 transition-opacity leading-none bg-none border-none cursor-pointer"
+                onclick="goBack()">←</button>
+        <img th:src="${post.users.profileImageUrl != null} ? '/upload/' + ${post.users.profileImageUrl} : 'https://i.pravatar.cc/150?u=default'"
+             class="w-8 h-8 rounded-full object-cover border border-gray-200" alt="프로필">
+        <a th:href="@{/profile/{id}(id=${post.users.snapiaId})}"
+           class="text-sm font-semibold text-gray-800 flex-1 hover:underline"
+           th:text="${post.users.snapiaId}">username</a>
+      </div>
+
+      <!-- 캡션 + 댓글 -->
+      <div class="post-comments flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-3">
+
+        <!-- 캡션 -->
+        <div th:if="${post.content}" class="flex gap-2.5">
+          <img th:src="${post.users.profileImageUrl != null} ? '/upload/' + ${post.users.profileImageUrl} : 'https://i.pravatar.cc/150?u=default'"
+               class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0" alt="프로필">
+          <div>
+            <div class="text-sm text-gray-800 leading-relaxed">
+              <strong class="font-semibold mr-1" th:text="${post.users.snapiaId}">username</strong>
+              <span th:text="${post.content}">내용</span>
+            </div>
+            <div class="text-xs text-gray-400 mt-1" th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</div>
+          </div>
+        </div>
+
+        <!-- 댓글 목록 -->
+        <div th:each="comment : ${comments}" class="flex gap-2.5" th:id="'comment-' + ${comment.cid}">
+          <img th:src="${comment.profileImageUrl != null} ? '/upload/' + ${comment.profileImageUrl} : 'https://i.pravatar.cc/150?u=default'"
+               class="w-8 h-8 rounded-full object-cover border border-gray-200 flex-shrink-0" alt="프로필">
+          <div class="flex-1">
+            <div class="text-sm text-gray-800 leading-relaxed">
+              <strong class="font-semibold mr-1" th:text="${comment.snapiaId}">username</strong>
+              <span th:id="'comment-content-' + ${comment.cid}" th:text="${comment.content}">댓글 내용</span>
+            </div>
+            <div class="flex items-center gap-3 mt-1">
+              <span class="text-xs text-gray-400" th:text="${#temporals.format(comment.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</span>
+              <!-- 좋아요 -->
+              <button class="text-xs text-gray-400 hover:text-red-400"
+                      th:onclick="'toggleCommentLike(' + ${comment.cid} + ')'">
+                <span th:text="${comment.liked} ? '❤️' : '🤍'">🤍</span>
+                <span th:id="'comment-like-' + ${comment.cid}" th:text="${comment.likeCount}">0</span>
+              </button>
+              <!-- 수정/삭제 - 본인 댓글만 표시 -->
+              <button th:if="${comment.mine}" class="text-xs text-gray-400 hover:text-blue-400"
+                      th:onclick="'startEditComment(' + ${comment.cid} + ')'">수정</button>
+              <button th:if="${comment.mine}" class="text-xs text-gray-400 hover:text-red-400"
+                      th:onclick="'deleteComment(' + ${comment.cid} + ')'">삭제</button>
+            </div>
+            <!-- 수정 입력창 (기본 숨김) -->
+            <div th:id="'edit-box-' + ${comment.cid}" class="hidden mt-1 flex gap-1">
+              <input type="text" th:id="'edit-input-' + ${comment.cid}"
+                     th:value="${comment.content}"
+                     class="flex-1 text-xs border border-gray-300 rounded px-2 py-1 outline-none">
+              <button class="text-xs text-blue-500 font-semibold"
+                      th:onclick="'submitEditComment(' + ${comment.cid} + ')'">완료</button>
+              <button class="text-xs text-gray-400"
+                      th:onclick="'cancelEditComment(' + ${comment.cid} + ')'">취소</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 액션 -->
+      <div class="px-4 pt-2 border-t border-gray-100">
+        <div class="flex items-center gap-4 py-1">
+          <button class="text-2xl leading-none bg-none border-none cursor-pointer hover:scale-110 transition-transform p-1"
+                  th:onclick="'toggleLike(event, ' + ${post.pid} + ')'">
+            <span id="heart-icon" th:text="${isLiked} ? '❤️' : '🤍'">🤍</span>
+          </button>
+        </div>
+        <div class="text-sm font-semibold text-gray-800 pb-2">
+          좋아요 <span id="like-count" th:text="${likeCount}">0</span>개
+        </div>
+        <div class="text-xs text-gray-400 uppercase pb-3 border-b border-gray-100" th:text="${#temporals.format(post.createdAt, 'yyyy-MM-dd HH:mm')}">날짜</div>
+      </div>
+
+      <!-- 댓글 입력 -->
+      <div class="flex items-center gap-2 px-4 py-3 border-t border-gray-100">
+        <input type="text" id="commentInput" placeholder="댓글 달기..."
+               class="flex-1 text-sm border-none outline-none text-gray-800 placeholder-gray-400"
+               onkeydown="if(event.key==='Enter') submitComment()">
+        <button onclick="submitComment()"
+                class="text-sm font-semibold text-blue-500 hover:text-blue-600">게시</button>
+      </div>
+
+      <!-- 수정/삭제 -->
+      <div class="flex gap-2 px-4 py-3 border-t border-gray-100">
+        <a th:href="@{/post/{pid}/edit(pid=${post.pid})}"
+           class="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">수정</a>
+        <form th:action="@{/post/{pid}/delete(pid=${post.pid})}" method="post" style="margin:0;">
+          <button type="submit"
+                  class="px-3 py-1.5 text-xs font-semibold text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors border-none cursor-pointer">삭제</button>
+        </form>
+      </div>
+    </div>
   </div>
-  <p>작성일: <span th:text="${post.createdAt}">날짜</span></p>
 </div>
-
-<div>
-  <a th:href="@{/post/{pid}/edit(pid=${post.pid})}">수정</a>
-  <form th:action="@{/post/{pid}/delete(pid=${post.pid})}" method="post">
-    <button type="submit">삭제</button>
-  </form>
-</div>
-
-<h3>댓글</h3>
-<div th:each="comment : ${comments}">
-  <p><strong th:text="${comment.users.snapiaId}">사용자</strong></p>
-  <p th:text="${comment.content}">댓글 내용</p>
-  <p th:text="${comment.createdAt}">작성일</p>
-</div>
-
-<a href="/post/my">목록으로</a>
 
 <script>
+  const postPid = [[${post.pid}]];
+
+  function goBack() {
+    history.back();
+  }
+
   function toggleLike(event, pid) {
     event.preventDefault();
     fetch(`/post/${pid}/like`, {
@@ -55,8 +154,70 @@
             })
             .catch(error => console.error('Error:', error));
   }
+
+  function submitComment() {
+    const content = document.getElementById('commentInput').value.trim();
+    if (!content) return;
+
+    fetch('/comment/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: content, pid: postPid })
+    }).then(res => {
+      if (res.ok) {
+        document.getElementById('commentInput').value = '';
+        location.reload();
+      }
+    }).catch(err => console.error(err));
+  }
+
+  function deleteComment(cid) {
+    if (!confirm('댓글을 삭제할까요?')) return;
+
+    fetch(`/comment/${cid}`, {
+      method: 'DELETE'
+    }).then(res => {
+      if (res.ok) {
+        document.getElementById('comment-' + cid).remove();
+      }
+    }).catch(err => console.error(err));
+  }
+
+  function startEditComment(cid) {
+    document.getElementById('edit-box-' + cid).classList.remove('hidden');
+  }
+
+  function cancelEditComment(cid) {
+    document.getElementById('edit-box-' + cid).classList.add('hidden');
+  }
+
+  function submitEditComment(cid) {
+    const content = document.getElementById('edit-input-' + cid).value.trim();
+    if (!content) return;
+
+    fetch(`/comment/${cid}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(content)
+    }).then(res => {
+      if (res.ok) {
+        document.getElementById('comment-content-' + cid).textContent = content;
+        cancelEditComment(cid);
+      }
+    }).catch(err => console.error(err));
+  }
+
+  function toggleCommentLike(cid) {
+    fetch(`/comment/${cid}/like`, {
+      method: 'POST'
+    }).then(res => res.json())
+            .then(count => {
+              document.getElementById('comment-like-' + cid).textContent = count;
+            }).catch(err => console.error(err));
+  }
 </script>
 
+<th:block th:replace="~{noti :: notiScript}"></th:block>
 <th:block th:replace="~{fragments/header :: headerScript}"></th:block>
 </body>
 </html>

@@ -32,7 +32,7 @@ public class PostService {
                 .content(postDTO.getContent())
                 .users(users)
                 .pubOrNot(PubOrNot.PUB)
-                .postImgUrl(fileName)
+                .postImgUrl(postDTO.getUserProfileImageUrl())
                 .build();
 
         postRepository.save(post);

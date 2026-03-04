@@ -63,6 +63,7 @@
     <div class="flex gap-20 mb-11">
         <div class="flex-shrink-0 profile-img-container">
             <div th:if="${isMyProfile == null or isMyProfile == true}" class="relative">
+                <!-- 스토리 있으면 링 + 클릭 시 뷰어, 없으면 링 없이 -->
                 <div th:class="${hasStory ?: false} ? 'story-ring cursor-pointer' : ''"
                      th:onclick="${hasStory ?: false} ? 'goStoryViewer(' + ${latestStoryId} + ')' : ''">
                     <div th:class="${hasStory ?: false} ? 'story-ring-inner' : ''">
@@ -71,7 +72,8 @@
                              th:class="${hasStory ?: false} ? 'w-36 h-36 rounded-full object-cover' : 'w-36 h-36 rounded-full object-cover border-2 border-gray-200'">
                     </div>
                 </div>
-                <div th:if="${!(hasStory ?: false)}" class="add-story-btn" onclick="openStoryUpload()">+</div>
+                <!-- + 버튼은 항상 표시 (스토리 추가 업로드 가능) -->
+                <div class="add-story-btn" onclick="openStoryUpload()">+</div>
             </div>
 
             <div th:if="${isMyProfile != null and isMyProfile == false}">

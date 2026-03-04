@@ -18,4 +18,6 @@ public interface StoryRepository extends JpaRepository<Story, Long> {
 
     // StoryRepository.java에 추가
     boolean existsByUsersUidAndCreatedAtAfter(Long userId, LocalDateTime createdAt);
+
+
 }

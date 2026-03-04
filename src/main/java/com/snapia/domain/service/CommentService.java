@@ -1,9 +1,11 @@
 package com.snapia.domain.service;
 
 import com.snapia.domain.dto.CommentDTO;
+import com.snapia.domain.dto.CommentResponseDTO;
 import com.snapia.domain.entity.Comment;
 import com.snapia.domain.entity.Post;
 import com.snapia.domain.entity.Users;
+import com.snapia.domain.repository.CommentLikeRepository;
 import com.snapia.domain.repository.CommentRepository;
 import com.snapia.domain.repository.PostRepository;
 import com.snapia.domain.repository.UserRepository;
@@ -22,6 +24,7 @@ public class CommentService {
     private final CommentRepository commentRepository;
     private final UserRepository userRepository;
     private final PostRepository postRepository;
+    private final CommentLikeRepository commentLikeRepository;
 
     public void register(CommentDTO commentDTO, String snapiaId) {
         Users users = userRepository.findByLoginIdentifier(snapiaId)
@@ -41,8 +44,7 @@ public class CommentService {
             builder.replyComment(replyComment);
         }
 
-        Comment comment = builder.build();
-        commentRepository.save(comment);
+        commentRepository.save(builder.build());
     }
 
     public void update(Long cid, String content, String snapiaId) {
@@ -67,15 +69,40 @@ public class CommentService {
         commentRepository.delete(comment);
     }
 
-    public List<Comment> getCommentsByPost(Long postId) {
-        return commentRepository.findByPostPid(postId);
+    public List<CommentResponseDTO> getCommentsByPost(Long postId, String snapiaId) {
+        Users users = userRepository.findByLoginIdentifier(snapiaId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 조회 불가"));
+
+        return commentRepository.findByPostPid(postId).stream()
+                .map(comment -> toResponseDTO(comment, users.getUid(), snapiaId))
+                .toList();
     }
 
-    public List<Comment> getRepliesByComment(Long commentId) {
-        return commentRepository.findByReplyCommentCid(commentId);
+    public List<CommentResponseDTO> getRepliesByComment(Long commentId, String snapiaId) {
+        Users users = userRepository.findByLoginIdentifier(snapiaId)
+                .orElseThrow(() -> new IllegalArgumentException("사용자 조회 불가"));
+
+        return commentRepository.findByReplyCommentCid(commentId).stream()
+                .map(comment -> toResponseDTO(comment, users.getUid(), snapiaId))
+                .toList();
     }
 
     public Long getCommentCount(Long postId) {
         return commentRepository.countByPostPid(postId);
+    }
+
+    private CommentResponseDTO toResponseDTO(Comment comment, Long uid, String snapiaId) {
+        return CommentResponseDTO.builder()
+                .cid(comment.getCid())
+                .content(comment.getContent())
+                .pid(comment.getPost().getPid())
+                .replyCommentId(comment.getReplyComment() != null ? comment.getReplyComment().getCid() : null)
+                .snapiaId(comment.getUsers().getSnapiaId())
+                .likeCount(commentLikeRepository.countByCommentCid(comment.getCid()))
+                .isLiked(commentLikeRepository.existsByCommentCidAndUsersUid(comment.getCid(), uid))
+                .createdAt(comment.getCreatedAt())
+                .isMine(comment.getUsers().getSnapiaId().equals(snapiaId))
+                .profileImageUrl(comment.getUsers().getProfileImageUrl())
+                .build();
     }
 }
