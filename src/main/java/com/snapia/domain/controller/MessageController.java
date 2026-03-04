@@ -35,4 +35,7 @@ public class MessageController {
     public void markAsRead(@RequestParam Long roomId, @AuthenticationPrincipal PrincipalDetails principalDetails) {
         messageService.markAsRead(roomId, principalDetails.getUsers());
     }
+
+
+
 }
