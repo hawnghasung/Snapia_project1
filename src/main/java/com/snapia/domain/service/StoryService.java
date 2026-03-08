@@ -2,6 +2,7 @@ package com.snapia.domain.service;
 
 import com.snapia.domain.dto.FollowListDTO;
 import com.snapia.domain.dto.StoryDTO;
+import com.snapia.domain.dto.UserDTO;
 import com.snapia.domain.entity.Story;
 import com.snapia.domain.entity.Users;
 import com.snapia.domain.repository.FollowListRepository;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,6 +61,26 @@ public class StoryService {
         List<Story> stories = storyRepository.findByUsersUidInAndCreatedAtAfterOrderByCreatedAtDesc(
                 followingUserIds, yesterday);
 
+        //조회하면 조회한 유저에 추가되게
+        stories.forEach(story -> {
+            if (!story.getUsers().getUid().equals(userId)) {
+                // viewUsers에 현재 유저 없으면 추가
+                Users users = userRepository.findById(userId)
+                        .orElseThrow(()->new IllegalArgumentException("오류"));
+
+                if (!story.getViewUser().contains(users)) {
+                    story.getViewUser().add(users);
+
+
+                    storyRepository.save(story);
+                }
+
+
+
+            }
+        });
+
+
         // DTO로 변환
         return stories.stream()
                 .map(this::convertToDTO)
@@ -97,16 +119,64 @@ public class StoryService {
         storyRepository.delete(story);
     }
 
-    // 6. 만료된 스토리 자동 삭제 (매시간 실행)
+    // 6. 만료된 스토리 자동 보관 (매시간 실행)
     @Scheduled(cron = "0 0 * * * *") // 매시간 정각에 실행
-    public void deleteExpiredStories() {
+    public void doArchived() {
+        /*
+        .now()로 현재 시간 가져오기
+        방금 추가한 findByExpiresAtBeforeAndIsArchivedFalse(now)로 만료된 스토리 목록 조회
+        isEmpty() 체크
+        조회된 스토리들 반복문 돌면서 isArchived = true로 변경
+        saveAll()로 일괄 저장
+        로그 찍기
+        */
         LocalDateTime now = LocalDateTime.now();
-        List<Story> expiredStories = storyRepository.findByExpiresAtBefore(now);
+        List<Story> expiredStories = storyRepository.findByExpiresAtBeforeAndIsArchivedFalse(now);
 
-        if (!expiredStories.isEmpty()) {
-            storyRepository.deleteAll(expiredStories);
-            log.info("만료된 스토리 {}개 삭제 완료", expiredStories.size());
-        }
+
+        expiredStories.forEach(story -> story.setArchived(true));
+
+        storyRepository.saveAll(expiredStories);
+
+        log.info("스토리 만료 저장 : " + expiredStories);
+    }
+
+    // 보관된 스토리 조회용 메서드
+    public List<StoryDTO> archivedStoryList(Long uid) {
+        List<Story> stories = storyRepository.findByUsersUidAndIsArchivedTrue(uid);
+
+
+        return stories.stream()
+                .map(story -> {
+                    StoryDTO dto = new StoryDTO();
+                    dto.setSid(story.getSid());
+                    dto.setCreatedAt(story.getCreatedAt());
+                    dto.setStoryImgUrl(story.getStoryImgUrl());
+                    dto.setExpiresAt(story.getExpiresAt());
+                    dto.setUserId(story.getUsers().getUid());
+                    dto.setSnapiaId(story.getUsers().getSnapiaId());
+
+                    return dto;
+                })
+                .toList();
+    }
+
+    //스토리 본 유저 조회 메서드
+    public List<UserDTO> usersList(Long sid) {
+        Story story = storyRepository.findById(sid)
+                .orElseThrow(()->new IllegalArgumentException());
+
+
+
+        return story.getViewUser().stream()
+                .map(users -> {
+                    UserDTO userDTO = new UserDTO();
+                    userDTO.setProfileImageUrl(users.getProfileImageUrl());
+                    userDTO.setSnapiaId(users.getSnapiaId());
+
+                    return userDTO;
+                })
+                .toList();
     }
 
     // DTO 변환 헬퍼 메서드
@@ -122,9 +192,4 @@ public class StoryService {
                 .build();
     }
 
-    // StoryService.java에 추가
-    public boolean hasStory(Long userId) {
-        LocalDateTime yesterday = LocalDateTime.now().minusHours(24);
-        return storyRepository.existsByUsersUidAndCreatedAtAfter(userId, yesterday);
-    }
 }

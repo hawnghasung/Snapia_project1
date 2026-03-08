@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Getter
@@ -27,4 +28,16 @@ public class Story extends BaseTimeEntity {
 
     // 24시간 후 자동 삭제용
     private LocalDateTime expiresAt;
+
+    private boolean isArchived = false;
+
+    //조회한 유저 목록
+    @ManyToMany
+    @JoinTable(
+            name = "story_view_users",
+            joinColumns = @JoinColumn(name = "story_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private List<Users> viewUser;
+
 }

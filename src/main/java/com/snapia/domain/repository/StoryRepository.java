@@ -1,6 +1,8 @@
 package com.snapia.domain.repository;
 
+import com.snapia.domain.dto.StoryDTO;
 import com.snapia.domain.entity.Story;
+import com.snapia.domain.entity.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
@@ -14,10 +16,8 @@ public interface StoryRepository extends JpaRepository<Story, Long> {
     List<Story> findByUsersUidAndCreatedAtAfterOrderByCreatedAtDesc(
             Long userId, LocalDateTime after);
 
-    List<Story> findByExpiresAtBefore(LocalDateTime dateTime);
+    List<Story> findByExpiresAtBeforeAndIsArchivedFalse(LocalDateTime dateTime);
 
-    // StoryRepository.java에 추가
-    boolean existsByUsersUidAndCreatedAtAfter(Long userId, LocalDateTime createdAt);
-
+    List<Story> findByUsersUidAndIsArchivedTrue(Long userId);
 
 }

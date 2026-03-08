@@ -2,7 +2,9 @@ package com.snapia.domain.controller;
 
 import com.snapia.domain.auth.PrincipalDetails;
 import com.snapia.domain.dto.StoryDTO;
+import com.snapia.domain.dto.UserDTO;
 import com.snapia.domain.entity.Story;
+import com.snapia.domain.entity.Users;
 import com.snapia.domain.service.StoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -97,5 +99,27 @@ public class StoryController {
             result.put("message", e.getMessage());
         }
         return result;
+    }
+
+    @GetMapping("/archive")
+    @ResponseBody
+    public List<StoryDTO> viewArchiveStory(@AuthenticationPrincipal PrincipalDetails principalDetails) {
+        List<StoryDTO> stories = storyService.archivedStoryList(principalDetails.getUsers().getUid());
+
+        return stories;
+    }
+
+    @GetMapping("/archive/list")
+    public String viewArchive() {
+        return "main/story/archive";
+    }
+
+    //스토리 본 유저 확인
+    @GetMapping("/{sid}/viewers")
+    @ResponseBody
+    public List<UserDTO> usersList(@PathVariable Long sid) {
+        List<UserDTO> users = storyService.usersList(sid);
+
+        return users;
     }
 }

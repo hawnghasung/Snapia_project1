@@ -137,6 +137,87 @@
             background-color: rgba(255, 0, 0, 0.9);
         }
 
+        /* 조회자 영역 */
+        .viewers-bar {
+            position: absolute;
+            bottom: 20px;
+            left: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10;
+            cursor: pointer;
+        }
+        .viewers-avatars {
+            display: flex;
+        }
+        .viewers-avatars img {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            object-fit: cover;
+            margin-left: -8px;
+        }
+        .viewers-avatars img:first-child {
+            margin-left: 0;
+        }
+        .viewers-count {
+            font-size: 13px;
+            font-weight: 500;
+            color: #fff;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+        }
+
+        /* 조회자 목록 팝업 */
+        .viewers-popup {
+            display: none;
+            position: absolute;
+            bottom: 60px;
+            left: 0;
+            right: 0;
+            background: rgba(20,20,20,0.97);
+            border-radius: 16px 16px 0 0;
+            z-index: 20;
+            max-height: 60%;
+            overflow-y: auto;
+        }
+        .viewers-popup.open { display: block; }
+        .viewers-popup-header {
+            padding: 16px;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            position: sticky;
+            top: 0;
+            background: rgba(20,20,20,0.97);
+        }
+        .viewers-popup-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+        }
+        .viewers-popup-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .viewers-popup-item span {
+            font-size: 14px;
+            font-weight: 500;
+            color: #fff;
+        }
+        .viewers-popup-empty {
+            padding: 32px;
+            text-align: center;
+            color: rgba(255,255,255,0.4);
+            font-size: 13px;
+        }
+
         /* 로딩 표시 */
         .loading {
             position: absolute;
@@ -173,6 +254,18 @@
 
     <div class="nav-zone nav-left" onclick="prevStory()"></div>
     <div class="nav-zone nav-right" onclick="nextStory()"></div>
+
+    <!-- 조회자 바 (본인 스토리일 때만 표시) -->
+    <div class="viewers-bar" id="viewersBar" style="display:none;" onclick="toggleViewersPopup()">
+        <div class="viewers-avatars" id="viewersAvatars"></div>
+        <span class="viewers-count" id="viewersCount"></span>
+    </div>
+
+    <!-- 조회자 목록 팝업 -->
+    <div class="viewers-popup" id="viewersPopup">
+        <div class="viewers-popup-header">조회한 사람</div>
+        <div id="viewersPopupBody"></div>
+    </div>
 </div>
 
 <script th:inline="javascript">
@@ -284,11 +377,74 @@
         try {
             const res = await fetch(`/story/detail/${sid}`);
             const data = await res.json();
-            // StoryDTO에 isOwner 필드가 있으면 활용, 없으면 숨김 유지
             document.getElementById('deleteBtn').style.display =
                 data.isOwner === true ? 'block' : 'none';
+
+            if (data.isOwner === true) {
+                loadViewers(sid);
+            } else {
+                document.getElementById('viewersBar').style.display = 'none';
+            }
         } catch { document.getElementById('deleteBtn').style.display = 'none'; }
     }
+
+    async function loadViewers(sid) {
+        try {
+            const res = await fetch(`/story/${sid}/viewers`);
+            if (!res.ok) throw new Error();
+            const viewers = await res.json();
+
+            const bar = document.getElementById('viewersBar');
+            const avatarsEl = document.getElementById('viewersAvatars');
+            const countEl = document.getElementById('viewersCount');
+            const popupBody = document.getElementById('viewersPopupBody');
+
+            if (!viewers || viewers.length === 0) {
+                bar.style.display = 'none';
+                return;
+            }
+
+            bar.style.display = 'flex';
+            countEl.textContent = `${viewers.length}명`;
+
+            // 최대 3명 프로필 사진
+            avatarsEl.innerHTML = '';
+            viewers.slice(0, 3).forEach(v => {
+                const img = document.createElement('img');
+                img.src = v.profileImageUrl ? `/upload/${v.profileImageUrl}` : '/images/default_profile.png';
+                img.onerror = () => img.src = '/images/default_profile.png';
+                avatarsEl.appendChild(img);
+            });
+
+            // 팝업 전체 목록
+            popupBody.innerHTML = viewers.length === 0
+                ? '<div class="viewers-popup-empty">아직 아무도 보지 않았습니다</div>'
+                : viewers.map(v => `
+                    <div class="viewers-popup-item">
+                        <img src="${v.profileImageUrl ? '/upload/' + v.profileImageUrl : '/images/default_profile.png'}"
+                             onerror="this.src='/images/default_profile.png'">
+                        <span>${v.snapiaId || ''}</span>
+                    </div>
+                `).join('');
+
+        } catch {
+            document.getElementById('viewersBar').style.display = 'none';
+        }
+    }
+
+    function toggleViewersPopup() {
+        const popup = document.getElementById('viewersPopup');
+        popup.classList.toggle('open');
+    }
+
+    // 팝업 외부 클릭 시 닫기
+    document.addEventListener('click', (e) => {
+        const popup = document.getElementById('viewersPopup');
+        const bar = document.getElementById('viewersBar');
+        if (popup.classList.contains('open') && !popup.contains(e.target) && !bar.contains(e.target)) {
+            popup.classList.remove('open');
+        }
+    });
 
     // ── 프로그레스 바 애니메이션 ────────────────────────
     function startProgressBar() {

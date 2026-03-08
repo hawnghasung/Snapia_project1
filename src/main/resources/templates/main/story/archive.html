@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>보관함 - Snapia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+        .archive-item { position: relative; padding-bottom: 177%; overflow: hidden; background: #efefef; cursor: pointer; }
+        .archive-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s ease; }
+        .archive-item:hover img { transform: scale(1.04); }
+        .archive-item-overlay { position: absolute; inset: 0; background: linear-gradient(transparent 60%, rgba(0,0,0,0.5)); opacity: 0; transition: opacity 0.2s; display: flex; align-items: flex-end; padding: 8px; }
+        .archive-item:hover .archive-item-overlay { opacity: 1; }
+
+        /* 뷰어 모달 */
+        .viewer-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9999; align-items: center; justify-content: center; }
+        .viewer-modal.open { display: flex; }
+        .viewer-story { position: relative; width: 100%; max-width: 420px; height: 90vh; background: #000; border-radius: 12px; overflow: hidden; }
+        .viewer-story img { width: 100%; height: 100%; object-fit: cover; }
+        .viewer-close { position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.4); border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .viewer-date { position: absolute; bottom: 20px; left: 16px; color: #fff; font-size: 13px; font-weight: 500; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
+
+        .tab-active { border-bottom: 1px solid #262626; color: #262626; }
+        .tab-inactive { border-bottom: 1px solid transparent; color: #8e8e8e; }
+
+        .spinner { width: 28px; height: 28px; border: 2px solid #dbdbdb; border-top-color: #262626; border-radius: 50%; animation: spin 0.7s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+<th:block th:replace="~{fragments/header :: header}"></th:block>
+
+<div class="mt-16 max-w-3xl mx-auto bg-white min-h-screen">
+
+    <!-- 헤더 -->
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-16 bg-white z-10">
+        <button onclick="history.back()" class="text-sm text-gray-700 flex items-center gap-1 hover:opacity-60">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+        </button>
+        <span class="font-semibold text-sm absolute left-1/2 -translate-x-1/2">보관함</span>
+        <div class="w-6"></div>
+    </div>
+
+    <!-- 탭 -->
+    <div class="flex border-b border-gray-200">
+        <button id="tabStories" onclick="switchTab('stories')"
+                class="flex-1 py-3 text-xs font-semibold tracking-wider flex items-center justify-center gap-1 tab-active">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+            </svg>
+            스토리
+        </button>
+        <button id="tabHighlights" onclick="switchTab('highlights')"
+                class="flex-1 py-3 text-xs font-semibold tracking-wider flex items-center justify-center gap-1 tab-inactive">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            하이라이트
+        </button>
+    </div>
+
+    <!-- 스토리 탭 -->
+    <div id="storiesPanel">
+        <div id="loadingSpinner" class="flex justify-center py-16">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="storyGrid" class="grid grid-cols-3 gap-px" style="display:none;"></div>
+
+        <div id="emptyState" class="flex flex-col items-center justify-center py-20 gap-4 text-center" style="display:none;">
+            <div class="w-16 h-16 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-400">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+                </svg>
+            </div>
+            <p class="text-lg font-light text-gray-800">보관된 스토리 없음</p>
+            <p class="text-sm text-gray-400 leading-relaxed">24시간이 지난 스토리가<br>여기에 자동으로 저장됩니다.</p>
+        </div>
+    </div>
+
+    <!-- 하이라이트 탭 -->
+    <div id="highlightsPanel" style="display:none;">
+        <div class="flex flex-col items-center justify-center py-20 gap-4 text-center">
+            <div class="w-16 h-16 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-400">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+            </div>
+            <p class="text-lg font-light text-gray-800">하이라이트 없음</p>
+            <p class="text-sm text-gray-400 leading-relaxed">보관된 스토리로<br>하이라이트를 만들어보세요.</p>
+            <button onclick="switchTab('stories')"
+                    class="mt-2 px-5 py-2 bg-blue-500 text-white text-sm font-semibold rounded-lg hover:bg-blue-600 transition-colors">
+                스토리 보관함으로 이동
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- 뷰어 모달 -->
+<div class="viewer-modal" id="viewerModal" onclick="closeViewerOutside(event)">
+    <div class="viewer-story">
+        <img id="viewerImg" src="" alt="보관된 스토리">
+        <button class="viewer-close" onclick="closeViewer()">×</button>
+        <span class="viewer-date" id="viewerDate"></span>
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        document.getElementById('storiesPanel').style.display = tab === 'stories' ? 'block' : 'none';
+        document.getElementById('highlightsPanel').style.display = tab === 'highlights' ? 'block' : 'none';
+        document.getElementById('tabStories').className = `flex-1 py-3 text-xs font-semibold tracking-wider flex items-center justify-center gap-1 ${tab === 'stories' ? 'tab-active' : 'tab-inactive'}`;
+        document.getElementById('tabHighlights').className = `flex-1 py-3 text-xs font-semibold tracking-wider flex items-center justify-center gap-1 ${tab === 'highlights' ? 'tab-active' : 'tab-inactive'}`;
+    }
+
+    async function loadArchivedStories() {
+        try {
+            const res = await fetch('/story/archive');
+            if (!res.ok) throw new Error();
+            const stories = await res.json();
+
+            document.getElementById('loadingSpinner').style.display = 'none';
+
+            if (!stories || stories.length === 0) {
+                document.getElementById('emptyState').style.display = 'flex';
+                return;
+            }
+
+            const grid = document.getElementById('storyGrid');
+            grid.style.display = 'grid';
+
+            stories.forEach(story => {
+                const item = document.createElement('div');
+                item.className = 'archive-item';
+                item.onclick = () => openViewer(story);
+
+                const imgSrc = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '/images/default_profile.png';
+                const dateStr = story.createdAt ? formatDate(story.createdAt) : '';
+
+                item.innerHTML = `
+                    <img src="${imgSrc}" alt="보관된 스토리" onerror="this.src='/images/default_profile.png'">
+                    <div class="archive-item-overlay">
+                        <span style="color:#fff; font-size:11px; font-weight:500;">${dateStr}</span>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+
+        } catch (e) {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'flex';
+        }
+    }
+
+    function openViewer(story) {
+        const imgSrc = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '/images/default_profile.png';
+        document.getElementById('viewerImg').src = imgSrc;
+        document.getElementById('viewerDate').textContent = story.createdAt ? formatDate(story.createdAt) : '';
+        document.getElementById('viewerModal').classList.add('open');
+    }
+
+    function closeViewer() {
+        document.getElementById('viewerModal').classList.remove('open');
+    }
+
+    function closeViewerOutside(e) {
+        if (e.target === document.getElementById('viewerModal')) closeViewer();
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
+    }
+
+    window.addEventListener('DOMContentLoaded', loadArchivedStories);
+</script>
+
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
+</body>
+</html>
