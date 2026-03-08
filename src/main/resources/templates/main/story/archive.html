@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>보관함 - Snapia</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
@@ -19,7 +20,7 @@
         .viewer-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9999; align-items: center; justify-content: center; }
         .viewer-modal.open { display: flex; }
         .viewer-story { position: relative; width: 100%; max-width: 420px; height: 90vh; background: #000; border-radius: 12px; overflow: hidden; }
-        .viewer-story img { width: 100%; height: 100%; object-fit: cover; }
+        .viewer-story img, .viewer-story video { width: 100%; height: 100%; object-fit: cover; }
         .viewer-close { position: absolute; top: 14px; right: 14px; background: rgba(0,0,0,0.4); border: none; color: #fff; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; z-index: 10; }
         .viewer-date { position: absolute; bottom: 20px; left: 16px; color: #fff; font-size: 13px; font-weight: 500; text-shadow: 0 1px 4px rgba(0,0,0,0.6); }
 
@@ -34,10 +35,10 @@
 
 <th:block th:replace="~{fragments/header :: header}"></th:block>
 
-<div class="mt-16 max-w-3xl mx-auto bg-white min-h-screen">
+<div style="margin-top: 80px;" class="max-w-3xl mx-auto bg-white min-h-screen">
 
     <!-- 헤더 -->
-    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 sticky top-16 bg-white z-10">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white z-10" style="position:sticky; top:80px;">
         <button onclick="history.back()" class="text-sm text-gray-700 flex items-center gap-1 hover:opacity-60">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M19 12H5M12 5l-7 7 7 7"/>
@@ -86,7 +87,13 @@
 
     <!-- 하이라이트 탭 -->
     <div id="highlightsPanel" style="display:none;">
-        <div class="flex flex-col items-center justify-center py-20 gap-4 text-center">
+        <div id="highlightLoadingSpinner" class="flex justify-center py-16">
+            <div class="spinner"></div>
+        </div>
+
+        <div id="highlightGrid" class="grid grid-cols-3 gap-px" style="display:none;"></div>
+
+        <div id="highlightEmptyState" class="flex flex-col items-center justify-center py-20 gap-4 text-center" style="display:none;">
             <div class="w-16 h-16 rounded-full border-2 border-gray-300 flex items-center justify-center text-gray-400">
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -107,6 +114,7 @@
 <div class="viewer-modal" id="viewerModal" onclick="closeViewerOutside(event)">
     <div class="viewer-story">
         <img id="viewerImg" src="" alt="보관된 스토리">
+        <video id="viewerVideo" class="hidden" controls playsinline preload="none"></video>
         <button class="viewer-close" onclick="closeViewer()">×</button>
         <span class="viewer-date" id="viewerDate"></span>
     </div>
@@ -146,6 +154,7 @@
 
                 item.innerHTML = `
                     <img src="${imgSrc}" alt="보관된 스토리" onerror="this.src='/images/default_profile.png'">
+                    ${story.mediaType === 'VIDEO' ? '<div style="position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.5);color:#fff;font-size:11px;border-radius:4px;padding:2px 6px;">▶</div>' : ''}
                     <div class="archive-item-overlay">
                         <span style="color:#fff; font-size:11px; font-weight:500;">${dateStr}</span>
                     </div>
@@ -160,13 +169,27 @@
     }
 
     function openViewer(story) {
-        const imgSrc = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '/images/default_profile.png';
-        document.getElementById('viewerImg').src = imgSrc;
+        const img   = document.getElementById('viewerImg');
+        const video = document.getElementById('viewerVideo');
+
+        if (story.mediaType === 'VIDEO' && story.storyImgUrl) {
+            img.classList.add('hidden');
+            video.src = `/upload/${story.storyImgUrl}`;
+            video.classList.remove('hidden');
+            video.play();
+        } else {
+            video.classList.add('hidden');
+            video.pause();
+            img.src = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '/images/default_profile.png';
+            img.classList.remove('hidden');
+        }
         document.getElementById('viewerDate').textContent = story.createdAt ? formatDate(story.createdAt) : '';
         document.getElementById('viewerModal').classList.add('open');
     }
 
     function closeViewer() {
+        const video = document.getElementById('viewerVideo');
+        video.pause();
         document.getElementById('viewerModal').classList.remove('open');
     }
 
@@ -180,7 +203,45 @@
         return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
     }
 
-    window.addEventListener('DOMContentLoaded', loadArchivedStories);
+    window.addEventListener('DOMContentLoaded', () => {
+        loadArchivedStories();
+        loadHighlights();
+    });
+
+    async function loadHighlights() {
+        try {
+            const res = await fetch('/highlight/list');
+            if (!res.ok) throw new Error();
+            const highlights = await res.json();
+
+            document.getElementById('highlightLoadingSpinner').style.display = 'none';
+
+            if (!highlights || highlights.length === 0) {
+                document.getElementById('highlightEmptyState').style.display = 'flex';
+                return;
+            }
+
+            const grid = document.getElementById('highlightGrid');
+            grid.style.display = 'grid';
+
+            highlights.forEach(h => {
+                const item = document.createElement('div');
+                item.className = 'archive-item';
+                item.onclick = () => location.href = `/highlight/viewer?hid=${h.hid}`;
+                const coverSrc = h.coverImgUrl ? `/upload/${h.coverImgUrl}` : '/images/default_profile.png';
+                item.innerHTML = `
+                    <img src="${coverSrc}" alt="${h.title}" onerror="this.src='/images/default_profile.png'">
+                    <div class="archive-item-overlay">
+                        <span style="color:#fff; font-size:11px; font-weight:500;">${h.title || ''}</span>
+                    </div>
+                `;
+                grid.appendChild(item);
+            });
+        } catch (e) {
+            document.getElementById('highlightLoadingSpinner').style.display = 'none';
+            document.getElementById('highlightEmptyState').style.display = 'flex';
+        }
+    }
 </script>
 
 <th:block th:replace="~{fragments/header :: headerScript}"></th:block>

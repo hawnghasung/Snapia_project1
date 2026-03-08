@@ -15,8 +15,11 @@ public class ProfilePostDTO {
 
     private String postImgUrl;
 
+    private String mediaType; // 추가
+
     private Integer likeCount;
 
     private Integer commentCount;
 
+    private String thumbnailUrl; // 추가 ← 영상 썸네일 경로
 }

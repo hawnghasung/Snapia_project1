@@ -55,6 +55,8 @@ public class DmController {
                     .senderId(m.getUsers().getUid())
                     .dateTime(m.getCreatedAt())
                     .readStatus(isRead ? ReadStatus.READ : ReadStatus.UNREAD)
+                    .replyStoryImgUrl(m.getReplyToStory() != null ? m.getReplyToStory().getStoryImgUrl() : null)
+                    .replyStorySid(m.getReplyToStory() != null ? m.getReplyToStory().getSid() : null)
                     .build();
         }).collect(java.util.stream.Collectors.toList());
 

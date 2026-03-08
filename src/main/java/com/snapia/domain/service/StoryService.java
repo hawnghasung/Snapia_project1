@@ -27,18 +27,36 @@ public class StoryService {
     private final StoryRepository storyRepository;
     private final FollowListRepository followListRepository;
     private final UserRepository userRepository;
+    private final FileService fileService;
 
     // 1. 스토리 등록
     public Story createStory(StoryDTO storyDTO, String snapiaId) {
         Users user = (Users) userRepository.findBySnapiaId(snapiaId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다"));
 
-        // 24시간 후 만료
         LocalDateTime expiresAt = LocalDateTime.now().plusHours(24);
+
+        // ✅ 기존 코드 교체
+        String mediaType = fileService.getMediaType(storyDTO.getMultipartFile());
+        String mediaUrl;
+        String thumbnailUrl = null;
+        Integer duration = null;
+
+        if ("VIDEO".equals(mediaType)) {
+            FileService.VideoSaveResult result = fileService.saveVideo(storyDTO.getMultipartFile(), 15); // 스토리는 15초
+            mediaUrl     = result.videoFileName;
+            thumbnailUrl = result.thumbFileName;
+            duration     = result.duration;
+        } else {
+            mediaUrl = fileService.saveFile(storyDTO.getMultipartFile());
+        }
 
         Story story = Story.builder()
                 .users(user)
-                .storyImgUrl(storyDTO.getStoryImgUrl())
+                .storyImgUrl(mediaUrl)      // 기존 필드 그대로 사용
+                .mediaType(mediaType)       // ✅ 추가
+                .thumbnailUrl(thumbnailUrl) // ✅ 추가
+                .duration(duration)         // ✅ 추가
                 .expiresAt(expiresAt)
                 .build();
 
@@ -99,9 +117,19 @@ public class StoryService {
     }
 
     // ⭐ 4. 특정 스토리 상세 조회
-    public StoryDTO getStoryDetail(Long sid) {
+    public StoryDTO getStoryDetail(Long sid, Long userId) {
         Story story = storyRepository.findById(sid)
                 .orElseThrow(() -> new IllegalArgumentException("스토리를 찾을 수 없습니다"));
+
+        if (!story.getUsers().getUid().equals(userId)) {
+            Users users = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("오류"));
+            if (!story.getViewUser().contains(users)) {
+                story.getViewUser().add(users);
+                storyRepository.save(story);
+            }
+        }
+
 
         return convertToDTO(story);
     }
@@ -187,6 +215,8 @@ public class StoryService {
                 .snapiaId(story.getUsers().getSnapiaId())
                 .profileImageUrl(story.getUsers().getProfileImageUrl())
                 .storyImgUrl(story.getStoryImgUrl())
+                .mediaType(story.getMediaType())       // ✅ 추가
+                .thumbnailUrl(story.getThumbnailUrl()) // ✅ 추가
                 .createdAt(story.getCreatedAt())
                 .expiresAt(story.getExpiresAt())
                 .build();

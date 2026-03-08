@@ -44,6 +44,7 @@ dependencies {
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation 'net.bramp.ffmpeg:ffmpeg:0.7.0'
 }
 
 tasks.named('test') {

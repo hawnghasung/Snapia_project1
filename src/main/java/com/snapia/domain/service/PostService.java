@@ -26,13 +26,29 @@ public class PostService {
         Users users = userRepository.findByLoginIdentifier(snapiaId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 조회 불가"));
 
-        String fileName = fileService.saveFile(postDTO.getMultipartFile());
+        // ✅ 기존 코드 교체
+        String mediaType = fileService.getMediaType(postDTO.getMultipartFile());
+        String mediaUrl;
+        String thumbnailUrl = null;
+        Integer duration = null;
+
+        if ("VIDEO".equals(mediaType)) {
+            FileService.VideoSaveResult result = fileService.saveVideo(postDTO.getMultipartFile(), 60);
+            mediaUrl     = result.videoFileName;
+            thumbnailUrl = result.thumbFileName;
+            duration     = result.duration;
+        } else {
+            mediaUrl = fileService.saveFile(postDTO.getMultipartFile());
+        }
 
         Post post = Post.builder()
                 .content(postDTO.getContent())
                 .users(users)
                 .pubOrNot(PubOrNot.PUB)
-                .postImgUrl(postDTO.getUserProfileImageUrl())
+                .postImgUrl(mediaUrl)       // 기존 필드 그대로 사용
+                .mediaType(mediaType)       // ✅ 추가
+                .thumbnailUrl(thumbnailUrl) // ✅ 추가
+                .duration(duration)         // ✅ 추가
                 .build();
 
         postRepository.save(post);
@@ -55,23 +71,31 @@ public class PostService {
             throw new IllegalArgumentException("본인 게시물만 수정 가능합니다");
         }
 
-        // 내용 수정
         if (postDTO.getContent() != null) {
             post.setContent(postDTO.getContent());
         }
 
-        // 이미지 수정 (새 파일이 있는 경우)
         if (postDTO.getMultipartFile() != null && !postDTO.getMultipartFile().isEmpty()) {
             // 기존 파일 삭제
-            if (post.getPostImgUrl() != null) {
-                fileService.deleteFile(post.getPostImgUrl());
+            fileService.deleteFile(post.getPostImgUrl());
+            if (post.getThumbnailUrl() != null) fileService.deleteFile(post.getThumbnailUrl()); // ✅ 추가
+
+            // ✅ 타입 분기
+            String mediaType = fileService.getMediaType(postDTO.getMultipartFile());
+            if ("VIDEO".equals(mediaType)) {
+                FileService.VideoSaveResult result = fileService.saveVideo(postDTO.getMultipartFile(), 60);
+                post.setPostImgUrl(result.videoFileName);
+                post.setThumbnailUrl(result.thumbFileName);
+                post.setDuration(result.duration);
+                post.setMediaType("VIDEO");
+            } else {
+                post.setPostImgUrl(fileService.saveFile(postDTO.getMultipartFile()));
+                post.setThumbnailUrl(null);
+                post.setDuration(null);
+                post.setMediaType("IMAGE");
             }
-            // 새 파일 저장
-            String newFileName = fileService.saveFile(postDTO.getMultipartFile());
-            post.setPostImgUrl(newFileName);
         }
 
-        // 공개 여부 수정
         if (postDTO.getPubOrNot() != null) {
             post.setPubOrNot(postDTO.getPubOrNot());
         }

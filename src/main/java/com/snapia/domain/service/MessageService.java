@@ -2,10 +2,7 @@ package com.snapia.domain.service;
 
 import com.snapia.domain.constant.ReadStatus;
 import com.snapia.domain.dto.MessageResponseDTO;
-import com.snapia.domain.entity.Message;
-import com.snapia.domain.entity.MessageReadStatus;
-import com.snapia.domain.entity.Room;
-import com.snapia.domain.entity.Users;
+import com.snapia.domain.entity.*;
 import com.snapia.domain.repository.MessageReadStatusRepository;
 import com.snapia.domain.repository.MessageRepository;
 import jakarta.transaction.Transactional;
@@ -23,7 +20,7 @@ public class MessageService {
     private final MessageRepository messageRepository;
     private final MessageReadStatusRepository messageReadStatusRepository;
 
-    public MessageResponseDTO sendMessage(Message message) {
+    public MessageResponseDTO sendMessage(Message message, Story story) {
         Message saveMessage = messageRepository.save(message);
 
         Users opponent = message.getUsers().equals(message.getRoom().getSender())
@@ -45,6 +42,8 @@ public class MessageService {
                 .content(saveMessage.getContent())
                 .senderId(saveMessage.getUsers().getUid())
                 .dateTime(saveMessage.getCreatedAt())
+                .replyStorySid(story != null ? story.getSid() : null)
+                .replyStoryImgUrl(story != null ? story.getStoryImgUrl() : null)
                 .build();
 
         return messageResponseDTO;

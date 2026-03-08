@@ -53,6 +53,44 @@
         .follow-action-btn.not-following { background-color: #0095f6; color: #fff; }
         .follow-action-btn:hover { opacity: 0.7; }
         .follow-empty { text-align: center; padding: 60px 20px; color: #8e8e8e; font-size: 14px; }
+
+        /* 하이라이트 섹션 */
+        .highlight-section { display: flex; gap: 20px; padding: 16px 4px; overflow-x: auto; scrollbar-width: none; }
+        .highlight-section::-webkit-scrollbar { display: none; }
+        .highlight-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; flex-shrink: 0; }
+        .highlight-item:hover .highlight-ring { transform: scale(1.04); }
+        .highlight-ring { width: 64px; height: 64px; border-radius: 50%; border: 1px solid #dbdbdb; overflow: hidden; transition: transform 0.2s; }
+        .highlight-ring img { width: 100%; height: 100%; object-fit: cover; }
+        .highlight-label { font-size: 11px; color: #262626; text-align: center; max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .highlight-new { width: 64px; height: 64px; border-radius: 50%; border: 1px dashed #dbdbdb; display: flex; align-items: center; justify-content: center; color: #8e8e8e; font-size: 24px; transition: all 0.2s; background: #fafafa; }
+        .highlight-new:hover { border-color: #262626; color: #262626; background: #f0f0f0; }
+        .archive-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border: 1px solid #dbdbdb; border-radius: 8px; font-size: 13px; font-weight: 600; color: #262626; background: #fff; cursor: pointer; transition: background 0.15s; text-decoration: none; }
+        .archive-btn:hover { background: #f5f5f5; }
+
+        /* 하이라이트 생성 모달 */
+        .highlight-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; align-items: center; justify-content: center; }
+        .highlight-modal-overlay.active { display: flex; }
+        .highlight-modal { background: #fff; border-radius: 12px; width: 90%; max-width: 420px; overflow: hidden; }
+        .highlight-modal-header { padding: 14px 20px; border-bottom: 1px solid #dbdbdb; text-align: center; font-size: 15px; font-weight: 600; position: relative; }
+        .highlight-modal-close { position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 22px; cursor: pointer; color: #262626; }
+        .highlight-modal-body { padding: 24px 20px; }
+        .highlight-modal-body input[type="text"] { width: 100%; padding: 10px 14px; border: 1px solid #dbdbdb; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box; margin-bottom: 14px; }
+        .highlight-modal-body input[type="text"]:focus { border-color: #0095f6; }
+        .highlight-story-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; max-height: 260px; overflow-y: auto; margin-bottom: 16px; border-radius: 4px; overflow: hidden; }
+        .highlight-story-item { position: relative; padding-bottom: 100%; background: #efefef; cursor: pointer; }
+        .highlight-story-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .highlight-story-item.selected::after { content: '✓'; position: absolute; inset: 0; background: rgba(0,149,246,0.45); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; font-weight: 700; }
+        .highlight-submit-btn { width: 100%; padding: 10px; background: #0095f6; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+        .highlight-submit-btn:hover { background: #1877f2; }
+        .highlight-submit-btn:disabled { background: #b2dffc; cursor: not-allowed; }
+
+        /* 하이라이트 컨텍스트 메뉴 */
+        .highlight-context-menu { display: none; position: fixed; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 99999; min-width: 160px; overflow: hidden; }
+        .highlight-context-menu.open { display: block; }
+        .highlight-context-item { padding: 13px 18px; font-size: 14px; cursor: pointer; color: #262626; transition: background 0.1s; }
+        .highlight-context-item:hover { background: #f5f5f5; }
+        .highlight-context-item.danger { color: #ed4956; }
+        .highlight-context-item.danger:hover { background: #fff0f1; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -116,6 +154,32 @@
         </div>
     </div>
 
+    <!-- 하이라이트 섹션 (본인 프로필) -->
+    <div th:if="${isMyProfile == null or isMyProfile == true}" class="border-t border-gray-200 pt-2">
+        <div class="flex items-center justify-between px-1 mb-1">
+            <span class="text-xs font-semibold text-gray-400 tracking-wider">하이라이트</span>
+            <a href="/story/archive/list" class="archive-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/>
+                </svg>
+                보관함
+            </a>
+        </div>
+        <div class="highlight-section" id="highlightSection">
+            <!-- 새 하이라이트 만들기 -->
+            <div class="highlight-item" onclick="openHighlightModal()">
+                <div class="highlight-new">+</div>
+                <span class="highlight-label text-gray-400">새로 만들기</span>
+            </div>
+            <!-- 하이라이트 목록 동적 렌더 -->
+        </div>
+    </div>
+
+    <!-- 하이라이트 섹션 (타인 프로필) -->
+    <div th:if="${isMyProfile != null and isMyProfile == false}" id="otherHighlightSection" class="border-t border-gray-200 pt-2 pb-2">
+        <div class="highlight-section" id="otherHighlightList"></div>
+    </div>
+
     <div class="flex justify-center gap-16 border-t border-gray-300 mb-7">
         <a href="#" class="flex items-center gap-1 py-4 text-xs font-semibold tracking-wider border-t border-black -mt-px">게시물</a>
         <a href="#" class="flex items-center gap-1 py-4 text-xs font-semibold tracking-wider text-gray-400 hover:text-gray-600">저장됨</a>
@@ -125,12 +189,62 @@
     <div th:if="${posts != null and !#lists.isEmpty(posts)}" class="grid grid-cols-3 gap-1">
         <div th:each="post : ${posts}" class="relative pb-[100%] bg-gray-100 overflow-hidden group">
             <a th:href="@{/post/{pid}(pid=${post.pid})}" class="absolute inset-0">
-                <img th:if="${post.postImgUrl != null}" th:src="@{'/upload/' + ${post.postImgUrl}}" class="w-full h-full object-cover">
+                <!-- 이미지 -->
+                <img th:if="${(post.mediaType == null or post.mediaType == 'IMAGE') and post.postImgUrl != null}"
+                     th:src="@{'/upload/' + ${post.postImgUrl}}"
+                     class="w-full h-full object-cover">
+                <!-- 동영상 썸네일 -->
+                <img th:if="${post.mediaType == 'VIDEO' and post.thumbnailUrl != null}"
+                     th:src="@{'/upload/' + ${post.thumbnailUrl}}"
+                     class="w-full h-full object-cover">
+                <!-- 동영상 뱃지 -->
+                <div th:if="${post.mediaType == 'VIDEO'}"
+                     class="absolute top-1.5 right-1.5 text-white text-xs bg-black bg-opacity-50 rounded px-1.5 py-0.5">▶</div>
                 <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center gap-8 opacity-0 group-hover:opacity-100">
                     <div class="flex items-center gap-2 text-white font-semibold"><span>❤️</span> <span th:text="${post.likeCount ?: 0}">0</span></div>
                     <div class="flex items-center gap-2 text-white font-semibold"><span>💬</span> <span th:text="${post.commentCount ?: 0}">0</span></div>
                 </div>
             </a>
+        </div>
+    </div>
+</div>
+
+<!-- 하이라이트 컨텍스트 메뉴 -->
+<div id="highlightContextMenu" class="highlight-context-menu">
+    <div class="highlight-context-item" onclick="contextGoViewer()">보기</div>
+    <div class="highlight-context-item danger" onclick="contextDeleteHighlight()">삭제</div>
+</div>
+
+<!-- 하이라이트 생성 모달 -->
+<div id="highlightModal" class="highlight-modal-overlay" onclick="closeHighlightModalOutside(event)">
+    <div class="highlight-modal">
+        <div class="highlight-modal-header">
+            <span id="highlightModalTitle">새 하이라이트</span>
+            <button class="highlight-modal-close" onclick="closeHighlightModal()">×</button>
+        </div>
+        <div class="highlight-modal-body">
+
+            <!-- 1단계: 스토리 선택 -->
+            <div id="stepSelectStories">
+                <input type="text" id="highlightTitle" placeholder="하이라이트 제목" maxlength="15">
+                <p class="text-xs text-gray-400 mb-3">보관된 스토리에서 선택하세요 (복수 선택 가능)</p>
+                <div class="highlight-story-grid" id="highlightStoryGrid">
+                    <div class="text-center text-gray-400 text-sm py-8 col-span-3">불러오는 중...</div>
+                </div>
+                <button class="highlight-submit-btn" id="goSelectCoverBtn" onclick="goSelectCover()" disabled>
+                    다음 — 커버 선택
+                </button>
+            </div>
+
+            <!-- 2단계: 커버 선택 -->
+            <div id="stepSelectCover" style="display:none;">
+                <p class="text-xs text-gray-400 mb-3">커버로 사용할 스토리를 선택하세요</p>
+                <div class="highlight-story-grid" id="highlightCoverGrid"></div>
+                <button class="highlight-submit-btn" id="highlightSubmitBtn" onclick="submitHighlight()" disabled>
+                    하이라이트 만들기
+                </button>
+            </div>
+
         </div>
     </div>
 </div>
@@ -143,7 +257,7 @@
                 <div id="uploadPrompt"><p style="font-size: 48px;">📷</p><p>클릭하여 선택</p></div>
                 <div id="previewArea" style="display: none;"><img id="previewImg" class="preview-img"></div>
             </div>
-            <input type="file" id="storyFileInput" accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
+            <input type="file" id="storyFileInput" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)">
             <button id="uploadButton" class="upload-btn" style="margin-top: 20px; display: none;" onclick="uploadStory()">스토리 올리기</button>
         </div>
     </div>
@@ -191,6 +305,7 @@
     }
 
     const userId = [[${user?.uid}]];
+    const isMyProfile = [[${isMyProfile == null or isMyProfile == true}]];
     let selectedFile = null;
 
     function goStoryViewer(sid) { if (sid) location.href = `/story/${sid}`; }
@@ -200,17 +315,39 @@
 
     function handleFileSelect(event) {
         const file = event.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            selectedFile = file;
+        if (!file) return;
+
+        const isVideo = file.type.startsWith('video/');
+        const isImage = file.type.startsWith('image/');
+        if (!isVideo && !isImage) return;
+
+        selectedFile = file;
+
+        const previewArea = document.getElementById('previewArea');
+        previewArea.innerHTML = '';
+
+        if (isVideo) {
+            const video = document.createElement('video');
+            video.src = URL.createObjectURL(file);
+            video.controls = true;
+            video.className = 'preview-img';
+            video.style.maxWidth = '100%';
+            video.style.maxHeight = '400px';
+            video.style.borderRadius = '8px';
+            previewArea.appendChild(video);
+        } else {
+            const img = document.createElement('img');
+            img.id = 'previewImg';
+            img.className = 'preview-img';
             const reader = new FileReader();
-            reader.onload = e => {
-                document.getElementById('previewImg').src = e.target.result;
-                document.getElementById('uploadPrompt').style.display = 'none';
-                document.getElementById('previewArea').style.display = 'block';
-                document.getElementById('uploadButton').style.display = 'block';
-            };
+            reader.onload = e => img.src = e.target.result;
             reader.readAsDataURL(file);
+            previewArea.appendChild(img);
         }
+
+        document.getElementById('uploadPrompt').style.display = 'none';
+        previewArea.style.display = 'block';
+        document.getElementById('uploadButton').style.display = 'block';
     }
 
     // ⭐ [수정됨] FormData를 이용한 직접 전송 방식
@@ -365,6 +502,262 @@
             document.getElementById('followingCount').textContent = data.followingCount;
         } catch (e) {
             alert('오류가 발생했습니다.');
+        }
+    }
+
+    // ── 하이라이트 ────────────────────────────────────────
+    let selectedStoryIds = [];
+    let selectedCoverSid = null;
+    let archivedStories = [];
+
+    // 페이지 로드 시 하이라이트 목록 불러오기
+    window.addEventListener('DOMContentLoaded', () => {
+        loadHighlights();
+        updateFollowStatus();
+    });
+
+    async function loadHighlights() {
+        try {
+            if (isMyProfile) {
+                const res = await fetch('/highlight/list');
+                if (!res.ok) return;
+                const highlights = await res.json();
+                renderHighlights(highlights);
+            } else {
+                const res = await fetch(`/highlight/user/${userId}`);
+                if (!res.ok) return;
+                const highlights = await res.json();
+                renderOtherHighlights(highlights);
+            }
+        } catch (e) { /* 하이라이트 없으면 무시 */ }
+    }
+
+    function renderOtherHighlights(highlights) {
+        const section = document.getElementById('otherHighlightList');
+        if (!section) return;
+        section.innerHTML = '';
+        if (!highlights || highlights.length === 0) return;
+        highlights.forEach(h => {
+            const item = document.createElement('div');
+            item.className = 'highlight-item';
+            const coverSrc = h.coverImgUrl ? `/upload/${h.coverImgUrl}` : '/images/default_profile.png';
+            item.innerHTML = `
+                <div class="highlight-ring">
+                    <img src="${coverSrc}" alt="${h.title}" onerror="this.src='/images/default_profile.png'">
+                </div>
+                <span class="highlight-label">${h.title || '하이라이트'}</span>
+            `;
+            item.onclick = () => location.href = `/highlight/viewer?hid=${h.hid}`;
+            section.appendChild(item);
+        });
+    }
+
+    function renderHighlights(highlights) {
+        const section = document.getElementById('highlightSection');
+        if (!section) return;
+
+        section.querySelectorAll('.highlight-item.existing').forEach(el => el.remove());
+
+        highlights.forEach(h => {
+            const item = document.createElement('div');
+            item.className = 'highlight-item existing';
+            item.dataset.hid = h.hid;
+            const coverSrc = h.coverImgUrl ? `/upload/${h.coverImgUrl}` : '/images/default_profile.png';
+            item.innerHTML = `
+                <div class="highlight-ring">
+                    <img src="${coverSrc}" alt="${h.title}" onerror="this.src='/images/default_profile.png'">
+                </div>
+                <span class="highlight-label">${h.title || '하이라이트'}</span>
+            `;
+
+            // 클릭 - 뷰어 이동
+            item.onclick = () => location.href = `/highlight/viewer?hid=${h.hid}`;
+
+            // 우클릭
+            item.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                openContextMenu(e.clientX, e.clientY, h.hid);
+            });
+
+            // 꾹 누르기 (모바일)
+            let pressTimer;
+            item.addEventListener('touchstart', () => {
+                pressTimer = setTimeout(() => openContextMenu(
+                    item.getBoundingClientRect().left,
+                    item.getBoundingClientRect().top,
+                    h.hid
+                ), 600);
+            });
+            item.addEventListener('touchend', () => clearTimeout(pressTimer));
+            item.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+            const newBtn = section.querySelector('.highlight-item:not(.existing)');
+            section.insertBefore(item, newBtn);
+        });
+    }
+
+    let contextTargetHid = null;
+
+    function openContextMenu(x, y, hid) {
+        contextTargetHid = hid;
+        const menu = document.getElementById('highlightContextMenu');
+        menu.style.left = `${Math.min(x, window.innerWidth - 180)}px`;
+        menu.style.top = `${Math.min(y, window.innerHeight - 100)}px`;
+        menu.classList.add('open');
+    }
+
+    function closeContextMenu() {
+        document.getElementById('highlightContextMenu').classList.remove('open');
+        contextTargetHid = null;
+    }
+
+    function contextGoViewer() {
+        if (!contextTargetHid) return;
+        closeContextMenu();
+        location.href = `/highlight/viewer?hid=${contextTargetHid}`;
+    }
+
+    async function contextDeleteHighlight() {
+        if (!contextTargetHid) return;
+        if (!confirm('하이라이트를 삭제할까요?')) { closeContextMenu(); return; }
+        try {
+            const res = await fetch(`/highlight/${contextTargetHid}`, { method: 'DELETE' });
+            if (res.ok) {
+                closeContextMenu();
+                loadHighlights();
+            } else alert('삭제 실패');
+        } catch (e) { alert('오류가 발생했습니다.'); }
+        closeContextMenu();
+    }
+
+    // 외부 클릭 시 컨텍스트 메뉴 닫기
+    document.addEventListener('click', (e) => {
+        if (!document.getElementById('highlightContextMenu').contains(e.target)) {
+            closeContextMenu();
+        }
+    });
+
+    // 하이라이트 생성 모달 열기
+    async function openHighlightModal() {
+        selectedStoryIds = [];
+        selectedCoverSid = null;
+        document.getElementById('highlightTitle').value = '';
+        document.getElementById('goSelectCoverBtn').disabled = true;
+        document.getElementById('highlightSubmitBtn').disabled = true;
+        document.getElementById('stepSelectStories').style.display = 'block';
+        document.getElementById('stepSelectCover').style.display = 'none';
+        document.getElementById('highlightModalTitle').textContent = '새 하이라이트';
+        document.getElementById('highlightModal').classList.add('active');
+
+        const grid = document.getElementById('highlightStoryGrid');
+        grid.innerHTML = '<div class="text-center text-gray-400 text-sm py-8 col-span-3">불러오는 중...</div>';
+        try {
+            const res = await fetch('/story/archive');
+            archivedStories = await res.json();
+            if (!archivedStories || archivedStories.length === 0) {
+                grid.innerHTML = '<div class="text-center text-gray-400 text-sm py-8 col-span-3">보관된 스토리가 없습니다</div>';
+                return;
+            }
+            grid.innerHTML = '';
+            archivedStories.forEach(story => {
+                const item = document.createElement('div');
+                item.className = 'highlight-story-item';
+                item.dataset.sid = story.sid;
+                const imgSrc = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '/images/default_profile.png';
+                item.innerHTML = `<img src="${imgSrc}" onerror="this.src='/images/default_profile.png'">`;
+                item.onclick = () => toggleStorySelect(item, story.sid);
+                grid.appendChild(item);
+            });
+        } catch (e) {
+            grid.innerHTML = '<div class="text-center text-gray-400 text-sm py-8 col-span-3">불러오기 실패</div>';
+        }
+    }
+
+    function goSelectCover() {
+        if (selectedStoryIds.length === 0 || !document.getElementById('highlightTitle').value.trim()) return;
+
+        // 선택된 스토리들로 커버 그리드 렌더
+        const coverGrid = document.getElementById('highlightCoverGrid');
+        coverGrid.innerHTML = '';
+        selectedCoverSid = null;
+        document.getElementById('highlightSubmitBtn').disabled = true;
+
+        const selected = archivedStories.filter(s => selectedStoryIds.includes(s.sid));
+        selected.forEach(story => {
+            const item = document.createElement('div');
+            item.className = 'highlight-story-item';
+            item.dataset.sid = story.sid;
+            const imgSrc = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '/images/default_profile.png';
+            item.innerHTML = `<img src="${imgSrc}" onerror="this.src='/images/default_profile.png'">`;
+            item.onclick = () => selectCover(item, story.sid);
+            coverGrid.appendChild(item);
+        });
+
+        document.getElementById('stepSelectStories').style.display = 'none';
+        document.getElementById('stepSelectCover').style.display = 'block';
+        document.getElementById('highlightModalTitle').textContent = '커버 선택';
+    }
+
+    function selectCover(item, sid) {
+        document.querySelectorAll('#highlightCoverGrid .highlight-story-item').forEach(el => el.classList.remove('selected'));
+        item.classList.add('selected');
+        selectedCoverSid = sid;
+        document.getElementById('highlightSubmitBtn').disabled = false;
+    }
+
+    function toggleStorySelect(item, sid) {
+        if (item.classList.contains('selected')) {
+            item.classList.remove('selected');
+            selectedStoryIds = selectedStoryIds.filter(id => id !== sid);
+        } else {
+            item.classList.add('selected');
+            selectedStoryIds.push(sid);
+        }
+        document.getElementById('goSelectCoverBtn').disabled = selectedStoryIds.length === 0
+            || !document.getElementById('highlightTitle').value.trim();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const titleInput = document.getElementById('highlightTitle');
+        if (titleInput) {
+            titleInput.addEventListener('input', () => {
+                document.getElementById('goSelectCoverBtn').disabled =
+                    selectedStoryIds.length === 0 || !titleInput.value.trim();
+            });
+        }
+    });
+
+    function closeHighlightModal() {
+        document.getElementById('highlightModal').classList.remove('active');
+    }
+
+    function closeHighlightModalOutside(e) {
+        if (e.target === document.getElementById('highlightModal')) closeHighlightModal();
+    }
+
+    async function submitHighlight() {
+        const title = document.getElementById('highlightTitle').value.trim();
+        if (!title || selectedStoryIds.length === 0) return;
+        const btn = document.getElementById('highlightSubmitBtn');
+        btn.disabled = true;
+        btn.textContent = '생성 중...';
+        try {
+            const res = await fetch('/highlight', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, storyIds: selectedStoryIds, coverStoryId: selectedCoverSid })
+            });
+            if (res.ok) {
+                closeHighlightModal();
+                loadHighlights();
+            } else {
+                alert('하이라이트 생성 실패');
+            }
+        } catch (e) {
+            alert('오류가 발생했습니다.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '하이라이트 만들기';
         }
     }
 </script>

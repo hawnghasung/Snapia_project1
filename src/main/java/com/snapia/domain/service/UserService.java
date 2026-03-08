@@ -89,6 +89,8 @@ public class UserService {
                         .postImgUrl(post.getPostImgUrl())
                         .likeCount(likesService.getLikeCount(post.getPid()).intValue())
                         .commentCount(commentService.getCommentCount(post.getPid()).intValue())
+                        .mediaType(post.getMediaType())       // ✅ 추가
+                        .thumbnailUrl(post.getThumbnailUrl())
                         .build()
         ).collect(Collectors.toList());
     }

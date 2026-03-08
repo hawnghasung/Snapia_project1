@@ -22,13 +22,23 @@
 <div class="mt-14 flex justify-center items-center min-h-screen px-5 py-5">
   <div class="bg-white border border-gray-200 rounded-lg max-w-4xl w-full flex flex-row shadow-sm">
 
-    <!-- 이미지 영역 -->
+    <!-- 미디어 영역 -->
     <div class="flex-1 min-h-96 bg-black flex items-center justify-center border-r border-gray-200 rounded-l-lg overflow-hidden">
-      <img th:if="${post.postImgUrl}"
+      <!-- 이미지 -->
+      <img th:if="${post.mediaType == null or post.mediaType == 'IMAGE'}"
            th:src="@{'/upload/' + ${post.postImgUrl}}"
            alt="게시물 이미지"
            class="w-full h-full object-contain max-h-[600px]">
-      <span th:unless="${post.postImgUrl}" class="text-gray-500 text-sm">이미지 없음</span>
+      <!-- 동영상 -->
+      <video th:if="${post.mediaType == 'VIDEO'}"
+             th:poster="@{'/upload/' + ${post.thumbnailUrl}}"
+             controls
+             playsinline
+             preload="none"
+             class="w-full h-full object-contain max-h-[600px]">
+        <source th:src="@{'/upload/' + ${post.postImgUrl}}" type="video/mp4">
+      </video>
+      <span th:unless="${post.postImgUrl}" class="text-gray-500 text-sm">미디어 없음</span>
     </div>
 
     <!-- 우측 -->

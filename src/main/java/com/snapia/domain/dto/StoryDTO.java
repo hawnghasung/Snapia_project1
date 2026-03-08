@@ -2,6 +2,7 @@ package com.snapia.domain.dto;
 
 import com.snapia.domain.entity.Users;
 import lombok.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,4 +35,9 @@ public class StoryDTO {
 
     @Builder.Default
     private Boolean isOwner = false;
+
+    private MultipartFile multipartFile;  // 파일 업로드용 (import 필요)
+    private String mediaType;
+    private String thumbnailUrl;
+    private Integer duration;
 }

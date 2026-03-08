@@ -12,4 +12,6 @@ public class MessageRequestDTO {
 
     private String content;
 
+    private Long storyId;
+
 }

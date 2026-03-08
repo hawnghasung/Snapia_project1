@@ -24,16 +24,22 @@
 
         <form th:action="@{/post}" method="post" enctype="multipart/form-data">
             <div class="p-6 flex flex-col gap-5">
-                <!-- 이미지 업로드 -->
+                <!-- 이미지/동영상 업로드 -->
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">이미지</label>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">사진 / 동영상</label>
                     <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
                          onclick="document.getElementById('fileInput').click()">
-                        <div class="text-4xl mb-2">🖼️</div>
-                        <div class="text-sm text-gray-500">클릭하여 이미지 선택</div>
+                        <div class="text-4xl mb-2" id="uploadIcon">🖼️</div>
+                        <div class="text-sm text-gray-500" id="uploadText">클릭하여 사진 또는 동영상 선택</div>
+                        <div class="text-xs text-gray-400 mt-1">사진: JPG, PNG, GIF | 동영상: MP4, MOV (최대 60초)</div>
                     </div>
-                    <input type="file" id="fileInput" name="multipartFile" accept="image/*" class="hidden" onchange="previewImage(event)">
+                    <input type="file" id="fileInput" name="multipartFile" accept="image/*,video/*" class="hidden" onchange="previewMedia(event)">
+                    <!-- 이미지 미리보기 -->
                     <img id="previewImg" class="hidden w-full max-h-72 object-contain rounded-lg mt-3" alt="미리보기">
+                    <!-- 동영상 미리보기 -->
+                    <video id="previewVideo" class="hidden w-full max-h-72 rounded-lg mt-3" controls playsinline></video>
+                    <!-- 파일 정보 -->
+                    <div id="fileInfo" class="hidden mt-2 text-xs text-gray-500 text-center"></div>
                 </div>
 
                 <!-- 내용 -->
@@ -66,16 +72,54 @@
 </div>
 
 <script>
-    function previewImage(event) {
+    function previewMedia(event) {
         const file = event.target.files[0];
-        if (file) {
+        if (!file) return;
+
+        const img   = document.getElementById('previewImg');
+        const video = document.getElementById('previewVideo');
+        const info  = document.getElementById('fileInfo');
+        const icon  = document.getElementById('uploadIcon');
+        const text  = document.getElementById('uploadText');
+
+        img.classList.add('hidden');
+        video.classList.add('hidden');
+
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+
+        if (file.type.startsWith('video/')) {
+            // 동영상 미리보기
+            video.src = URL.createObjectURL(file);
+            video.classList.remove('hidden');
+            icon.textContent = '🎬';
+            text.textContent = file.name;
+
+            // 길이 체크
+            video.onloadedmetadata = () => {
+                const duration = Math.floor(video.duration);
+                if (duration > 60) {
+                    info.textContent = `⚠️ 동영상이 ${duration}초입니다. 60초 이하만 업로드 가능합니다.`;
+                    info.classList.remove('hidden');
+                    info.style.color = '#ef4444';
+                } else {
+                    info.textContent = `✅ ${duration}초 · ${sizeMB}MB`;
+                    info.classList.remove('hidden');
+                    info.style.color = '#6b7280';
+                }
+            };
+        } else {
+            // 이미지 미리보기
             const reader = new FileReader();
             reader.onload = e => {
-                const img = document.getElementById('previewImg');
                 img.src = e.target.result;
                 img.classList.remove('hidden');
             };
             reader.readAsDataURL(file);
+            icon.textContent = '🖼️';
+            text.textContent = file.name;
+            info.textContent = `📁 ${sizeMB}MB`;
+            info.classList.remove('hidden');
+            info.style.color = '#6b7280';
         }
     }
 </script>

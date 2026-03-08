@@ -22,5 +22,7 @@ public class HighlightDTO {
 
     private String coverImgUrl;
 
+    private Long coverStoryId;
+
 
 }

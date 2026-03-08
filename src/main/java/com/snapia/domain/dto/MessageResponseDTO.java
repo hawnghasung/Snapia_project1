@@ -23,4 +23,8 @@ public class MessageResponseDTO {
     private LocalDateTime dateTime;
 
     private ReadStatus readStatus;
+
+    private Long replyStorySid;
+
+    private String replyStoryImgUrl;
 }

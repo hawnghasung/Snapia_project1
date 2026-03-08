@@ -40,4 +40,8 @@ public class Story extends BaseTimeEntity {
     )
     private List<Users> viewUser;
 
+    private String mediaType;     // "IMAGE" or "VIDEO"
+    private String thumbnailUrl;  // 동영상 썸네일
+    private Integer duration;     // 동영상 길이 (초)
+
 }

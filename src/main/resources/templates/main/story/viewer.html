@@ -4,97 +4,158 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Snapia Story Viewer</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            margin: 0;
-            background-color: #1a1a1a;
+            background: #0a0a0a;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            color: white;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Instrument Sans', sans-serif;
+            overflow: hidden;
         }
 
-        /* 뷰어 컨테이너 */
+        /* 배경 블러 이미지 */
+        .bg-blur {
+            position: fixed;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(40px) brightness(0.3) saturate(1.5);
+            transform: scale(1.1);
+            z-index: 0;
+            transition: background-image 0.4s ease;
+        }
+
         .story-container {
             width: 100%;
-            max-width: 450px;
-            height: 90vh;
+            max-width: 420px;
+            height: 92vh;
             position: relative;
-            background-color: #000;
-            border-radius: 8px;
+            border-radius: 20px;
             overflow: hidden;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            z-index: 1;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06);
         }
 
         /* 상단 프로그레스 바 */
         .progress-container {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            right: 10px;
+            top: 14px;
+            left: 12px;
+            right: 12px;
             display: flex;
-            gap: 5px;
+            gap: 4px;
             z-index: 10;
         }
         .progress-bar {
-            height: 2px;
-            background: rgba(255, 255, 255, 0.3);
+            height: 2.5px;
+            background: rgba(255,255,255,0.25);
             flex-grow: 1;
-            border-radius: 2px;
+            border-radius: 99px;
             overflow: hidden;
         }
         .progress-fill {
             height: 100%;
-            background: white;
+            background: #fff;
             width: 0%;
             transition: width 0.1s linear;
+            border-radius: 99px;
         }
 
         /* 사용자 정보 */
         .user-info {
             position: absolute;
-            top: 25px;
-            left: 15px;
+            top: 30px;
+            left: 14px;
             display: flex;
             align-items: center;
             gap: 10px;
             z-index: 10;
         }
         .user-info img {
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            border: 1px solid white;
+            border: 2px solid rgba(255,255,255,0.8);
             object-fit: cover;
         }
-        .user-info span {
-            font-size: 14px;
+        .user-meta { display: flex; flex-direction: column; }
+        .user-name {
+            font-size: 13.5px;
             font-weight: 600;
+            color: #fff;
+            text-shadow: 0 1px 6px rgba(0,0,0,0.5);
         }
         .story-time {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-left: 8px;
+            font-size: 11px;
+            color: rgba(255,255,255,0.65);
         }
 
-        /* 메인 콘텐츠(이미지) */
+        /* 닫기 버튼 */
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 14px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            color: #fff;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .close-btn:hover { background: rgba(0,0,0,0.55); }
+
+        /* 삭제 버튼 */
+        .delete-btn {
+            position: absolute;
+            top: 76px;
+            right: 14px;
+            background: rgba(237,73,86,0.85);
+            backdrop-filter: blur(8px);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Instrument Sans', sans-serif;
+            cursor: pointer;
+            z-index: 10;
+            display: none;
+            transition: background 0.2s;
+        }
+        .delete-btn:hover { background: rgba(237,73,86,1); }
+
+        /* 메인 미디어 */
         .story-content {
             width: 100%;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
+            background: #111;
         }
-        .story-content img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
+        .story-content img,
+        .story-content video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
-        /* 좌우 클릭 영역 */
+        /* 좌우 클릭 */
         .nav-zone {
             position: absolute;
             top: 0;
@@ -106,92 +167,71 @@
         .nav-left { left: 0; }
         .nav-right { right: 0; }
 
-        /* 닫기 버튼 */
-        .close-btn {
+        /* 하단 그라디언트 */
+        .bottom-gradient {
             position: absolute;
-            top: 25px;
-            right: 15px;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 10;
-            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 220px;
+            background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%);
+            z-index: 6;
+            pointer-events: none;
         }
 
-        /* 삭제 버튼 (본인 스토리일 때만) */
-        .delete-btn {
-            position: absolute;
-            top: 65px;
-            right: 15px;
-            background-color: rgba(255, 0, 0, 0.7);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            cursor: pointer;
-            z-index: 10;
-            display: none;
-        }
-        .delete-btn:hover {
-            background-color: rgba(255, 0, 0, 0.9);
-        }
-
-        /* 조회자 영역 */
+        /* 조회자 바 */
         .viewers-bar {
             position: absolute;
-            bottom: 20px;
-            left: 15px;
+            bottom: 90px;
+            left: 14px;
             display: flex;
             align-items: center;
             gap: 8px;
             z-index: 10;
             cursor: pointer;
         }
-        .viewers-avatars {
-            display: flex;
-        }
+        .viewers-avatars { display: flex; }
         .viewers-avatars img {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            border: 2px solid #fff;
+            border: 2px solid rgba(255,255,255,0.8);
             object-fit: cover;
-            margin-left: -8px;
+            margin-left: -6px;
         }
-        .viewers-avatars img:first-child {
-            margin-left: 0;
-        }
+        .viewers-avatars img:first-child { margin-left: 0; }
         .viewers-count {
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: 500;
-            color: #fff;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            color: rgba(255,255,255,0.9);
         }
 
-        /* 조회자 목록 팝업 */
+        /* 조회자 팝업 */
         .viewers-popup {
             display: none;
             position: absolute;
-            bottom: 60px;
+            bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(20,20,20,0.97);
-            border-radius: 16px 16px 0 0;
+            background: rgba(14,14,14,0.97);
+            backdrop-filter: blur(20px);
+            border-radius: 20px 20px 0 0;
             z-index: 20;
-            max-height: 60%;
+            max-height: 55%;
             overflow-y: auto;
+            border-top: 1px solid rgba(255,255,255,0.08);
         }
         .viewers-popup.open { display: block; }
         .viewers-popup-header {
             padding: 16px;
             text-align: center;
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 600;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
             position: sticky;
             top: 0;
-            background: rgba(20,20,20,0.97);
+            background: rgba(14,14,14,0.97);
         }
         .viewers-popup-item {
             display: flex;
@@ -200,36 +240,120 @@
             padding: 10px 16px;
         }
         .viewers-popup-item img {
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             object-fit: cover;
-            border: 1px solid rgba(255,255,255,0.2);
         }
         .viewers-popup-item span {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 500;
             color: #fff;
         }
         .viewers-popup-empty {
             padding: 32px;
             text-align: center;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255,255,255,0.35);
             font-size: 13px;
         }
 
-        /* 로딩 표시 */
+        /* ── 답장 영역 ── */
+        .reply-area {
+            position: absolute;
+            bottom: 20px;
+            left: 12px;
+            right: 12px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .reply-input-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 0 16px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .reply-input-wrap:focus-within {
+            background: rgba(255,255,255,0.18);
+            border-color: rgba(255,255,255,0.45);
+        }
+        .reply-input {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 13.5px;
+            font-family: 'Instrument Sans', sans-serif;
+            padding: 12px 0;
+            caret-color: #fff;
+        }
+        .reply-input::placeholder { color: rgba(255,255,255,0.5); }
+
+        .reply-send-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.15s, background 0.2s;
+        }
+        .reply-send-btn:hover { transform: scale(1.08); background: #f0f0f0; }
+        .reply-send-btn:active { transform: scale(0.95); }
+        .reply-send-btn svg { width: 18px; height: 18px; }
+
+        /* 전송 완료 토스트 */
+        .toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.85);
+            background: rgba(20,20,20,0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 30;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            white-space: nowrap;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        /* 로딩 */
         .loading {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 18px;
-            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            letter-spacing: 0.02em;
         }
     </style>
 </head>
 <body>
+
+<div class="bg-blur" id="bgBlur"></div>
 
 <div class="story-container">
     <div class="progress-container" id="progressContainer">
@@ -238,48 +362,77 @@
 
     <div class="user-info">
         <img src="/images/default-profile.png" alt="profile" id="userImg">
-        <div>
-            <span id="userId">Loading...</span>
+        <div class="user-meta">
+            <span class="user-name" id="userId">Loading...</span>
             <span class="story-time" id="storyTime"></span>
         </div>
     </div>
 
-    <div class="close-btn" onclick="closeViewer()"><i class="fas fa-times"></i></div>
+    <div class="close-btn" onclick="closeViewer()">✕</div>
     <button class="delete-btn" id="deleteBtn" onclick="deleteCurrentStory()">삭제</button>
 
     <div class="story-content">
-        <div class="loading" id="loadingText">스토리를 불러오는 중...</div>
-        <img src="" alt="story image" id="storyImg" style="display: none;">
+        <div class="loading" id="loadingText">불러오는 중...</div>
+        <img src="" alt="story" id="storyImg" style="display:none;">
+        <video id="storyVideo" style="display:none;" playsinline preload="auto" muted></video>
     </div>
 
     <div class="nav-zone nav-left" onclick="prevStory()"></div>
     <div class="nav-zone nav-right" onclick="nextStory()"></div>
 
-    <!-- 조회자 바 (본인 스토리일 때만 표시) -->
+    <div class="bottom-gradient"></div>
+
+    <!-- 조회자 바 -->
     <div class="viewers-bar" id="viewersBar" style="display:none;" onclick="toggleViewersPopup()">
         <div class="viewers-avatars" id="viewersAvatars"></div>
         <span class="viewers-count" id="viewersCount"></span>
     </div>
 
-    <!-- 조회자 목록 팝업 -->
+    <!-- 조회자 팝업 -->
     <div class="viewers-popup" id="viewersPopup">
         <div class="viewers-popup-header">조회한 사람</div>
         <div id="viewersPopupBody"></div>
     </div>
+
+    <!-- 답장 영역 -->
+    <div class="reply-area" id="replyArea">
+        <div class="reply-input-wrap">
+            <input type="text" class="reply-input" id="replyInput" placeholder="답장 보내기..." maxlength="500">
+        </div>
+        <button class="reply-send-btn" onclick="sendReply()">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 2L11 13" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- 토스트 -->
+    <div class="toast" id="toast"></div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
 <script th:inline="javascript">
     const currentSid = [[${storyId}]];
     const STORY_DURATION = 5000;
 
-    // 유저별 그룹: [ { userId, snapiaId, profileImageUrl, stories: [...] }, ... ]
     let userGroups = [];
-    let groupIndex = 0;   // 현재 유저 그룹
-    let storyIndex = 0;   // 그룹 내 스토리 인덱스
-
+    let groupIndex = 0;
+    let storyIndex = 0;
     let progressInterval;
     let progress = 0;
     let isPaused = false;
+    let currentRoomId = null;
+    let isOwnerCurrent = false;
+
+    // ── WebSocket 연결 ──────────────────────────────────
+    let stompClient = null;
+    const socket = new SockJS('/ws');
+    stompClient = Stomp.over(socket);
+    stompClient.debug = null;
+    stompClient.connect({}, () => {}, () => {});
 
     // ── 초기 로드 ──────────────────────────────────────
     async function loadStories() {
@@ -288,7 +441,6 @@
             if (!res.ok) throw new Error();
             const flat = await res.json();
 
-            // 유저별로 그룹핑 (순서 유지)
             const map = new Map();
             flat.forEach(s => {
                 if (!map.has(s.userId)) map.set(s.userId, []);
@@ -299,10 +451,9 @@
                 userId: uid,
                 snapiaId: stories[0].snapiaId,
                 profileImageUrl: stories[0].profileImageUrl,
-                stories // 이미 최신순 정렬됨 (서버에서 OrderByCreatedAtDesc)
+                stories
             }));
 
-            // 클릭한 sid가 속한 그룹/인덱스 찾기
             outer: for (let g = 0; g < userGroups.length; g++) {
                 for (let s = 0; s < userGroups[g].stories.length; s++) {
                     if (userGroups[g].stories[s].sid == currentSid) {
@@ -321,7 +472,7 @@
         }
     }
 
-    // ── 프로그레스 바 렌더 (그룹 내 스토리 수만큼) ────
+    // ── 프로그레스 바 렌더 ──────────────────────────────
     function renderProgressBars() {
         const container = document.getElementById('progressContainer');
         const count = userGroups[groupIndex].stories.length;
@@ -332,62 +483,145 @@
             bar.innerHTML = `<div class="progress-fill" id="fill-${i}"></div>`;
             container.appendChild(bar);
         }
-        // 이미 본 스토리는 꽉 채우기
         for (let i = 0; i < storyIndex; i++) {
             const f = document.getElementById(`fill-${i}`);
             if (f) f.style.width = '100%';
         }
     }
 
-    // ── 현재 스토리 표시 ───────────────────────────────
+    // ── 현재 스토리 표시 ────────────────────────────────
     function showStory() {
         clearInterval(progressInterval);
 
         const group = userGroups[groupIndex];
         const story = group.stories[storyIndex];
 
-        const storyImg = document.getElementById('storyImg');
+        const storyImg   = document.getElementById('storyImg');
+        const storyVideo = document.getElementById('storyVideo');
         const loadingText = document.getElementById('loadingText');
 
-        storyImg.style.display = 'none';
+        storyImg.style.display   = 'none';
+        storyVideo.style.display = 'none';
+        storyVideo.pause();
         loadingText.style.display = 'block';
 
-        storyImg.onload = () => {
-            loadingText.style.display = 'none';
-            storyImg.style.display = 'block';
-            startProgressBar();
-        };
-        storyImg.onerror = () => { setTimeout(nextStory, 800); };
-        storyImg.src = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '';
+        if (story.mediaType === 'VIDEO' && story.storyImgUrl) {
+            // 동영상
+            storyVideo.src = `/upload/${story.storyImgUrl}`;
+            storyVideo.oncanplay = () => {
+                loadingText.style.display = 'none';
+                storyVideo.style.display = 'block';
+                document.getElementById('bgBlur').style.backgroundImage =
+                    story.thumbnailUrl ? `url('/upload/${story.thumbnailUrl}')` : '';
+                storyVideo.play();
+                // 동영상 길이에 맞게 프로그레스 설정
+                startProgressBar(storyVideo.duration * 1000 || 5000);
+            };
+            storyVideo.onerror = () => setTimeout(nextStory, 800);
+        } else {
+            // 이미지
+            storyImg.onload = () => {
+                loadingText.style.display = 'none';
+                storyImg.style.display = 'block';
+                document.getElementById('bgBlur').style.backgroundImage = `url('${storyImg.src}')`;
+                startProgressBar(5000);
+            };
+            storyImg.onerror = () => setTimeout(nextStory, 800);
+            storyImg.src = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '';
+        }
 
-        // 유저 정보
         document.getElementById('userImg').src = group.profileImageUrl
             ? `/upload/${group.profileImageUrl}`
             : `https://i.pravatar.cc/150?u=${group.userId}`;
         document.getElementById('userId').textContent = group.snapiaId || 'Unknown';
         document.getElementById('storyTime').textContent = getTimeAgo(story.createdAt);
 
-        // 삭제 버튼: 본인 그룹이면 표시
-        // 첫 번째 그룹이 본인(getFollowingStories에서 본인 포함)일 수 있으므로
-        // sid 기준으로 서버에서 isOwner 판단하도록 fetch
         checkOwner(story.sid);
+        prepareRoom(group.userId);
     }
 
+    // ── 방 준비 (답장용) ────────────────────────────────
+    async function prepareRoom(storyOwnerId) {
+        currentRoomId = null;
+        try {
+            const res = await fetch('/room/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ receiverId: storyOwnerId })
+            });
+            if (res.ok) {
+                const room = await res.json();
+                currentRoomId = room.roid;
+            }
+        } catch (e) {}
+    }
+
+    // ── 답장 전송 ───────────────────────────────────────
+    async function sendReply() {
+        const input = document.getElementById('replyInput');
+        const content = input.value.trim();
+        if (!content) return;
+        if (!currentRoomId) { showToast('잠시 후 다시 시도해주세요.'); return; }
+        if (isOwnerCurrent) { showToast('본인 스토리에는 답장할 수 없습니다.'); return; }
+
+        const story = userGroups[groupIndex].stories[storyIndex];
+
+        if (stompClient && stompClient.connected) {
+            stompClient.send('/p/dm/send', {}, JSON.stringify({
+                roid: currentRoomId,
+                content: content,
+                storyId: story.sid
+            }));
+            input.value = '';
+            showToast('💬 메시지를 보냈습니다');
+        } else {
+            showToast('연결이 끊겼습니다. 새로고침 해주세요.');
+        }
+    }
+
+    // 엔터키 전송
+    document.getElementById('replyInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendReply();
+        }
+    });
+
+    // 입력창 포커스 시 프로그레스 일시정지
+    document.getElementById('replyInput').addEventListener('focus', () => isPaused = true);
+    document.getElementById('replyInput').addEventListener('blur', () => isPaused = false);
+
+    // ── 토스트 ──────────────────────────────────────────
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // ── owner 체크 ──────────────────────────────────────
     async function checkOwner(sid) {
         try {
             const res = await fetch(`/story/detail/${sid}`);
             const data = await res.json();
-            document.getElementById('deleteBtn').style.display =
-                data.isOwner === true ? 'block' : 'none';
+            isOwnerCurrent = data.isOwner === true;
+            document.getElementById('deleteBtn').style.display = isOwnerCurrent ? 'block' : 'none';
+            // 본인 스토리면 답장창 숨기기
+            document.getElementById('replyArea').style.display = isOwnerCurrent ? 'none' : 'flex';
 
-            if (data.isOwner === true) {
+            if (isOwnerCurrent) {
+                document.getElementById('viewersBar').style.display = 'flex';
                 loadViewers(sid);
             } else {
                 document.getElementById('viewersBar').style.display = 'none';
             }
-        } catch { document.getElementById('deleteBtn').style.display = 'none'; }
+        } catch {
+            document.getElementById('deleteBtn').style.display = 'none';
+            isOwnerCurrent = false;
+        }
     }
 
+    // ── 조회자 로드 ──────────────────────────────────────
     async function loadViewers(sid) {
         try {
             const res = await fetch(`/story/${sid}/viewers`);
@@ -407,7 +641,6 @@
             bar.style.display = 'flex';
             countEl.textContent = `${viewers.length}명`;
 
-            // 최대 3명 프로필 사진
             avatarsEl.innerHTML = '';
             viewers.slice(0, 3).forEach(v => {
                 const img = document.createElement('img');
@@ -416,7 +649,6 @@
                 avatarsEl.appendChild(img);
             });
 
-            // 팝업 전체 목록
             popupBody.innerHTML = viewers.length === 0
                 ? '<div class="viewers-popup-empty">아직 아무도 보지 않았습니다</div>'
                 : viewers.map(v => `
@@ -426,18 +658,15 @@
                         <span>${v.snapiaId || ''}</span>
                     </div>
                 `).join('');
-
         } catch {
             document.getElementById('viewersBar').style.display = 'none';
         }
     }
 
     function toggleViewersPopup() {
-        const popup = document.getElementById('viewersPopup');
-        popup.classList.toggle('open');
+        document.getElementById('viewersPopup').classList.toggle('open');
     }
 
-    // 팝업 외부 클릭 시 닫기
     document.addEventListener('click', (e) => {
         const popup = document.getElementById('viewersPopup');
         const bar = document.getElementById('viewersBar');
@@ -447,63 +676,53 @@
     });
 
     // ── 프로그레스 바 애니메이션 ────────────────────────
-    function startProgressBar() {
+    function startProgressBar(duration) {
+        duration = duration || STORY_DURATION;
         progress = 0;
         const fill = document.getElementById(`fill-${storyIndex}`);
-
         progressInterval = setInterval(() => {
             if (isPaused) return;
-            progress += 2;
+            progress += (100 / (duration / 100));
             if (fill) fill.style.width = progress + '%';
             if (progress >= 100) nextStory();
         }, 100);
     }
 
-    // ── 다음: 같은 유저 스토리 → 다음 유저 그룹 ────────
+    // ── 다음 / 이전 ──────────────────────────────────────
     function nextStory() {
         clearInterval(progressInterval);
         const group = userGroups[groupIndex];
-
         if (storyIndex < group.stories.length - 1) {
-            // 같은 유저의 다음 스토리
             storyIndex++;
-            renderProgressBars();
-            showStory();
         } else if (groupIndex < userGroups.length - 1) {
-            // 다음 유저 그룹으로
             groupIndex++;
             storyIndex = 0;
-            renderProgressBars();
-            showStory();
         } else {
             closeViewer();
+            return;
         }
+        renderProgressBars();
+        showStory();
     }
 
-    // ── 이전: 같은 유저 스토리 → 이전 유저 그룹 ────────
     function prevStory() {
         clearInterval(progressInterval);
-
         if (storyIndex > 0) {
             storyIndex--;
-            renderProgressBars();
-            showStory();
         } else if (groupIndex > 0) {
             groupIndex--;
             storyIndex = userGroups[groupIndex].stories.length - 1;
-            renderProgressBars();
-            showStory();
         }
-        // 첫 번째면 아무것도 안 함
+        renderProgressBars();
+        showStory();
     }
 
-    // ── 닫기 ────────────────────────────────────────────
+    // ── 닫기 / 삭제 ─────────────────────────────────────
     function closeViewer() {
         clearInterval(progressInterval);
         window.history.back();
     }
 
-    // ── 삭제 ────────────────────────────────────────────
     async function deleteCurrentStory() {
         if (!confirm('이 스토리를 삭제하시겠습니까?')) return;
         const story = userGroups[groupIndex].stories[storyIndex];
@@ -513,7 +732,6 @@
             if (result.success) {
                 const group = userGroups[groupIndex];
                 group.stories.splice(storyIndex, 1);
-
                 if (group.stories.length === 0) {
                     userGroups.splice(groupIndex, 1);
                     if (userGroups.length === 0) { closeViewer(); return; }
@@ -544,11 +762,15 @@
 
     // ── 일시정지 이벤트 ─────────────────────────────────
     const container = document.querySelector('.story-container');
-    container.addEventListener('mousedown', () => isPaused = true);
-    container.addEventListener('mouseup',   () => isPaused = false);
-    container.addEventListener('mouseleave',() => isPaused = false);
-    container.addEventListener('touchstart',() => isPaused = true);
-    container.addEventListener('touchend',  () => isPaused = false);
+    container.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('.reply-area') && !e.target.closest('.viewers-popup')) isPaused = true;
+    });
+    container.addEventListener('mouseup', () => isPaused = false);
+    container.addEventListener('mouseleave', () => isPaused = false);
+    container.addEventListener('touchstart', (e) => {
+        if (!e.target.closest('.reply-area') && !e.target.closest('.viewers-popup')) isPaused = true;
+    }, { passive: true });
+    container.addEventListener('touchend', () => isPaused = false);
 
     loadStories();
 </script>

@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snapia Highlight Viewer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0a0a0a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Instrument Sans', sans-serif;
+            overflow: hidden;
+        }
+
+        .bg-blur {
+            position: fixed;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(40px) brightness(0.3) saturate(1.5);
+            transform: scale(1.1);
+            z-index: 0;
+            transition: background-image 0.4s ease;
+        }
+
+        .story-container {
+            width: 100%;
+            max-width: 420px;
+            height: 92vh;
+            position: relative;
+            border-radius: 20px;
+            overflow: hidden;
+            z-index: 1;
+            box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.06);
+        }
+
+        .progress-container {
+            position: absolute;
+            top: 14px;
+            left: 12px;
+            right: 12px;
+            display: flex;
+            gap: 4px;
+            z-index: 10;
+        }
+        .progress-bar {
+            height: 2.5px;
+            background: rgba(255,255,255,0.25);
+            flex-grow: 1;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: #fff;
+            width: 0%;
+            transition: width 0.1s linear;
+            border-radius: 99px;
+        }
+
+        .highlight-header {
+            position: absolute;
+            top: 30px;
+            left: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+        .highlight-cover {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(255,255,255,0.8);
+        }
+        .highlight-info { display: flex; flex-direction: column; }
+        .highlight-title {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #fff;
+            text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+        }
+        .story-time {
+            font-size: 11px;
+            color: rgba(255,255,255,0.65);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 30px;
+            right: 14px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+            color: #fff;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
+        .close-btn:hover { background: rgba(0,0,0,0.55); }
+
+        .manage-btn {
+            position: absolute;
+            top: 76px;
+            right: 14px;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            font-family: 'Instrument Sans', sans-serif;
+            cursor: pointer;
+            z-index: 10;
+            display: none;
+            transition: background 0.2s;
+        }
+        .manage-btn:hover { background: rgba(0,0,0,0.65); }
+
+        .story-content {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #111;
+        }
+        .story-content img,
+        .story-content video { width: 100%; height: 100%; object-fit: cover; }
+
+        .nav-zone {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 30%;
+            z-index: 5;
+            cursor: pointer;
+        }
+        .nav-left { left: 0; }
+        .nav-right { right: 0; }
+
+        .bottom-gradient {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 220px;
+            background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%);
+            z-index: 6;
+            pointer-events: none;
+        }
+
+        /* 조회자 바 */
+        .viewers-bar { position: absolute; bottom: 90px; left: 14px; display: flex; align-items: center; gap: 8px; z-index: 10; cursor: pointer; }
+        .viewers-avatars { display: flex; }
+        .viewers-avatars img { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.8); object-fit: cover; margin-left: -6px; }
+        .viewers-avatars img:first-child { margin-left: 0; }
+        .viewers-count { font-size: 12.5px; font-weight: 500; color: rgba(255,255,255,0.9); }
+
+        /* 조회자 팝업 */
+        .viewers-popup { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(14,14,14,0.97); backdrop-filter: blur(20px); border-radius: 20px 20px 0 0; z-index: 20; max-height: 55%; overflow-y: auto; border-top: 1px solid rgba(255,255,255,0.08); }
+        .viewers-popup.open { display: block; }
+        .viewers-popup-header { padding: 16px; text-align: center; font-size: 13.5px; font-weight: 600; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); position: sticky; top: 0; background: rgba(14,14,14,0.97); }
+        .viewers-popup-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
+        .viewers-popup-item img { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; }
+        .viewers-popup-item span { font-size: 13.5px; font-weight: 500; color: #fff; }
+        .viewers-popup-empty { padding: 32px; text-align: center; color: rgba(255,255,255,0.35); font-size: 13px; }
+
+        /* 답장 영역 */
+        .reply-area {
+            position: absolute;
+            bottom: 20px;
+            left: 12px;
+            right: 12px;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .reply-input-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            padding: 0 16px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .reply-input-wrap:focus-within { background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.45); }
+        .reply-input {
+            flex: 1;
+            background: none;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 13.5px;
+            font-family: 'Instrument Sans', sans-serif;
+            padding: 12px 0;
+            caret-color: #fff;
+        }
+        .reply-input::placeholder { color: rgba(255,255,255,0.5); }
+        .reply-send-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: transform 0.15s, background 0.2s;
+        }
+        .reply-send-btn:hover { transform: scale(1.08); background: #f0f0f0; }
+        .reply-send-btn:active { transform: scale(0.95); }
+        .reply-send-btn svg { width: 18px; height: 18px; }
+
+        /* 토스트 */
+        .toast {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.85);
+            background: rgba(20,20,20,0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 30;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+            white-space: nowrap;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+        /* 관리 모달 */
+        .manage-modal { display: none; position: absolute; bottom: 0; left: 0; right: 0; background: rgba(14,14,14,0.97); backdrop-filter: blur(20px); border-radius: 20px 20px 0 0; z-index: 25; padding-bottom: 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .manage-modal.open { display: block; }
+        .manage-modal-header { padding: 16px; text-align: center; font-size: 13.5px; font-weight: 600; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.08); }
+        .manage-modal-item { display: flex; align-items: center; gap: 14px; padding: 14px 20px; cursor: pointer; font-size: 14px; color: #fff; transition: background 0.15s; }
+        .manage-modal-item:hover { background: rgba(255,255,255,0.06); }
+        .manage-modal-item.danger { color: #ff4d4d; }
+        .manage-modal-item i { width: 20px; text-align: center; }
+
+        /* 편집 모달 */
+        .edit-modal { display: none; position: absolute; inset: 0; background: rgba(10,10,10,0.97); z-index: 30; overflow-y: auto; border-radius: 20px; }
+        .edit-modal.open { display: flex; flex-direction: column; }
+        .edit-modal-header { padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+        .edit-modal-header span { font-size: 15px; font-weight: 600; color: #fff; }
+        .edit-modal-header button { background: none; border: none; color: #0095f6; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Instrument Sans', sans-serif; }
+        .edit-modal-body { padding: 16px; flex: 1; }
+        .edit-modal-body input[type="text"] { width: 100%; padding: 10px 14px; border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; font-size: 14px; background: rgba(255,255,255,0.08); color: #fff; outline: none; box-sizing: border-box; margin-bottom: 16px; font-family: 'Instrument Sans', sans-serif; }
+        .edit-modal-body input[type="text"]:focus { border-color: #0095f6; }
+        .edit-story-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; border-radius: 8px; overflow: hidden; }
+        .edit-story-item { position: relative; padding-bottom: 100%; background: #222; cursor: pointer; }
+        .edit-story-item img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+        .edit-story-item.selected::after { content: '✓'; position: absolute; inset: 0; background: rgba(0,149,246,0.45); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; font-weight: 700; }
+        .edit-save-btn { width: 100%; margin-top: 16px; padding: 12px; background: #0095f6; color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: 'Instrument Sans', sans-serif; }
+        .edit-save-btn:disabled { background: #1a4a6e; cursor: not-allowed; }
+
+        .loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 14px; color: rgba(255,255,255,0.5); }
+    </style>
+</head>
+<body>
+
+<div class="bg-blur" id="bgBlur"></div>
+
+<div class="story-container">
+    <div class="progress-container" id="progressContainer"></div>
+
+    <div class="highlight-header">
+        <img src="/images/default_profile.png" alt="cover" class="highlight-cover" id="highlightCover">
+        <div class="highlight-info">
+            <span class="highlight-title" id="highlightTitle">하이라이트</span>
+            <span class="story-time" id="storyTime"></span>
+        </div>
+    </div>
+
+    <div class="close-btn" onclick="closeViewer()">✕</div>
+
+    <button class="manage-btn" id="manageBtn" onclick="openManageModal()">
+        <i class="fas fa-ellipsis-h"></i> 관리
+    </button>
+
+    <div class="story-content">
+        <div class="loading" id="loadingText">불러오는 중...</div>
+        <img src="" alt="story" id="storyImg" style="display:none;">
+        <video id="storyVideo" style="display:none;" playsinline preload="auto" muted></video>
+    </div>
+
+    <div class="nav-zone nav-left" onclick="prevStory()"></div>
+    <div class="nav-zone nav-right" onclick="nextStory()"></div>
+
+    <div class="bottom-gradient"></div>
+
+    <div class="viewers-bar" id="viewersBar" style="display:none;" onclick="toggleViewersPopup()">
+        <div class="viewers-avatars" id="viewersAvatars"></div>
+        <span class="viewers-count" id="viewersCount"></span>
+    </div>
+
+    <div class="viewers-popup" id="viewersPopup">
+        <div class="viewers-popup-header">조회한 사람</div>
+        <div id="viewersPopupBody"></div>
+    </div>
+
+    <!-- 답장 영역 -->
+    <div class="reply-area" id="replyArea">
+        <div class="reply-input-wrap">
+            <input type="text" class="reply-input" id="replyInput" placeholder="답장 보내기..." maxlength="500">
+        </div>
+        <button class="reply-send-btn" onclick="sendReply()">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 2L11 13" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- 편집 모달 -->
+    <div class="edit-modal" id="editModal">
+        <div class="edit-modal-header">
+            <span>하이라이트 편집</span>
+            <button onclick="saveEdit()" id="editSaveBtn">저장</button>
+        </div>
+        <div class="edit-modal-body">
+            <input type="text" id="editTitle" placeholder="하이라이트 제목" maxlength="15">
+            <p style="color:rgba(255,255,255,0.4); font-size:12px; margin-bottom:10px;">포함할 스토리를 선택하세요</p>
+            <div class="edit-story-grid" id="editStoryGrid"></div>
+        </div>
+    </div>
+
+    <!-- 관리 모달 -->
+    <div class="manage-modal" id="manageModal">
+        <div class="manage-modal-header">하이라이트 관리</div>
+        <div class="manage-modal-item" onclick="editHighlight()"><i class="fas fa-edit"></i> 하이라이트 편집</div>
+        <div class="manage-modal-item" onclick="removeCurrentStory()"><i class="fas fa-minus-circle"></i> 이 스토리 제거</div>
+        <div class="manage-modal-item danger" onclick="deleteHighlight()"><i class="fas fa-trash"></i> 하이라이트 삭제</div>
+        <div class="manage-modal-item" onclick="closeManageModal()"><i class="fas fa-times"></i> 취소</div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+
+<script th:inline="javascript">
+    const hid = [[${hid}]];
+    const STORY_DURATION = 5000;
+
+    let stories = [];
+    let storyIndex = 0;
+    let highlightData = null;
+    let currentStoryDetail = null;
+    let currentRoomId = null;
+
+    let progressInterval;
+    let progress = 0;
+    let isPaused = false;
+    let isOwner = false;
+
+    // ── WebSocket ────────────────────────────────────
+    let stompClient = null;
+    const socket = new SockJS('/ws');
+    stompClient = Stomp.over(socket);
+    stompClient.debug = null;
+    stompClient.connect({}, () => {}, () => {});
+
+    // ── 초기 로드 ──────────────────────────────────────
+    async function loadHighlight() {
+        try {
+            const res = await fetch(`/highlight/${hid}`);
+            if (!res.ok) throw new Error();
+            highlightData = await res.json();
+            stories = highlightData.storyIds || [];
+
+            if (stories.length === 0) {
+                document.getElementById('loadingText').textContent = '스토리가 없습니다.';
+                setTimeout(closeViewer, 2000);
+                return;
+            }
+
+            document.getElementById('highlightTitle').textContent = highlightData.title || '하이라이트';
+            if (highlightData.coverImgUrl) {
+                document.getElementById('highlightCover').src = `/upload/${highlightData.coverImgUrl}`;
+            }
+
+            await checkOwner();
+            renderProgressBars();
+            showStory();
+        } catch (e) {
+            document.getElementById('loadingText').textContent = '불러올 수 없습니다.';
+            setTimeout(closeViewer, 2000);
+        }
+    }
+
+    async function checkOwner() {
+        try {
+            const res = await fetch(`/highlight/${hid}/owner`);
+            const data = await res.json();
+            isOwner = data.isOwner === true;
+            document.getElementById('manageBtn').style.display = isOwner ? 'block' : 'none';
+            document.getElementById('replyArea').style.display = isOwner ? 'none' : 'flex';
+        } catch {
+            document.getElementById('manageBtn').style.display = 'none';
+            isOwner = false;
+        }
+    }
+
+    // ── 방 준비 ──────────────────────────────────────
+    async function prepareRoom(ownerId) {
+        currentRoomId = null;
+        if (!ownerId) return;
+        try {
+            const res = await fetch('/room/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ receiverId: ownerId })
+            });
+            if (res.ok) {
+                const room = await res.json();
+                currentRoomId = room.roid;
+            }
+        } catch (e) {}
+    }
+
+    // ── 답장 전송 ─────────────────────────────────────
+    async function sendReply() {
+        const input = document.getElementById('replyInput');
+        const content = input.value.trim();
+        if (!content) return;
+        if (!currentRoomId) { showToast('잠시 후 다시 시도해주세요.'); return; }
+        if (!currentStoryDetail) { showToast('스토리 정보를 불러오는 중입니다.'); return; }
+
+        if (stompClient && stompClient.connected) {
+            stompClient.send('/p/dm/send', {}, JSON.stringify({
+                roid: currentRoomId,
+                content: content,
+                storyId: currentStoryDetail.sid
+            }));
+            input.value = '';
+            showToast('💬 메시지를 보냈습니다');
+        } else {
+            showToast('연결이 끊겼습니다. 새로고침 해주세요.');
+        }
+    }
+
+    document.getElementById('replyInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); }
+    });
+    document.getElementById('replyInput').addEventListener('focus', () => isPaused = true);
+    document.getElementById('replyInput').addEventListener('blur', () => isPaused = false);
+
+    function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    // ── 프로그레스 바 ────────────────────────────────
+    function renderProgressBars() {
+        const container = document.getElementById('progressContainer');
+        container.innerHTML = '';
+        stories.forEach((_, i) => {
+            const bar = document.createElement('div');
+            bar.className = 'progress-bar';
+            bar.innerHTML = `<div class="progress-fill" id="fill-${i}"></div>`;
+            container.appendChild(bar);
+        });
+        for (let i = 0; i < storyIndex; i++) {
+            const f = document.getElementById(`fill-${i}`);
+            if (f) f.style.width = '100%';
+        }
+    }
+
+    // ── 스토리 표시 ──────────────────────────────────
+    async function showStory() {
+        clearInterval(progressInterval);
+        currentStoryDetail = null;
+
+        const sid = stories[storyIndex];
+        const storyImg   = document.getElementById('storyImg');
+        const storyVideo = document.getElementById('storyVideo');
+        const loadingText = document.getElementById('loadingText');
+
+        storyImg.style.display   = 'none';
+        storyVideo.style.display = 'none';
+        storyVideo.pause();
+        loadingText.style.display = 'block';
+
+        try {
+            const res = await fetch(`/story/detail/${sid}`);
+            const story = await res.json();
+            currentStoryDetail = story;
+
+            if (story.mediaType === 'VIDEO' && story.storyImgUrl) {
+                // 동영상
+                storyVideo.src = `/upload/${story.storyImgUrl}`;
+                storyVideo.oncanplay = () => {
+                    loadingText.style.display = 'none';
+                    storyVideo.style.display = 'block';
+                    document.getElementById('bgBlur').style.backgroundImage =
+                        story.thumbnailUrl ? `url('/upload/${story.thumbnailUrl}')` : '';
+                    storyVideo.play();
+                    startProgressBar(storyVideo.duration * 1000 || 5000);
+                };
+                storyVideo.onerror = () => setTimeout(nextStory, 800);
+            } else {
+                // 이미지
+                storyImg.onload = () => {
+                    loadingText.style.display = 'none';
+                    storyImg.style.display = 'block';
+                    document.getElementById('bgBlur').style.backgroundImage = `url('${storyImg.src}')`;
+                    startProgressBar(5000);
+                };
+                storyImg.onerror = () => setTimeout(nextStory, 800);
+                storyImg.src = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '';
+            }
+
+            document.getElementById('storyTime').textContent = getTimeAgo(story.createdAt);
+
+            if (!isOwner && highlightData?.userId) {
+                prepareRoom(highlightData.userId);
+            }
+
+            if (isOwner) loadViewers(sid);
+            else document.getElementById('viewersBar').style.display = 'none';
+        } catch {
+            setTimeout(nextStory, 800);
+        }
+    }
+
+    async function loadViewers(sid) {
+        try {
+            const res = await fetch(`/story/${sid}/viewers`);
+            if (!res.ok) throw new Error();
+            const viewers = await res.json();
+            const bar = document.getElementById('viewersBar');
+            const avatarsEl = document.getElementById('viewersAvatars');
+            const countEl = document.getElementById('viewersCount');
+            const popupBody = document.getElementById('viewersPopupBody');
+
+            if (!viewers || viewers.length === 0) { bar.style.display = 'none'; return; }
+            bar.style.display = 'flex';
+            countEl.textContent = `${viewers.length}명`;
+            avatarsEl.innerHTML = '';
+            viewers.slice(0, 3).forEach(v => {
+                const img = document.createElement('img');
+                img.src = v.profileImageUrl ? `/upload/${v.profileImageUrl}` : '/images/default_profile.png';
+                img.onerror = () => img.src = '/images/default_profile.png';
+                avatarsEl.appendChild(img);
+            });
+            popupBody.innerHTML = viewers.map(v => `
+                <div class="viewers-popup-item">
+                    <img src="${v.profileImageUrl ? '/upload/' + v.profileImageUrl : '/images/default_profile.png'}" onerror="this.src='/images/default_profile.png'">
+                    <span>${v.snapiaId || ''}</span>
+                </div>
+            `).join('');
+        } catch { document.getElementById('viewersBar').style.display = 'none'; }
+    }
+
+    function toggleViewersPopup() { document.getElementById('viewersPopup').classList.toggle('open'); }
+
+    document.addEventListener('click', (e) => {
+        const popup = document.getElementById('viewersPopup');
+        const bar = document.getElementById('viewersBar');
+        if (popup.classList.contains('open') && !popup.contains(e.target) && !bar.contains(e.target)) {
+            popup.classList.remove('open');
+        }
+    });
+
+    function startProgressBar(duration) {
+        duration = duration || STORY_DURATION;
+        progress = 0;
+        const fill = document.getElementById(`fill-${storyIndex}`);
+        progressInterval = setInterval(() => {
+            if (isPaused) return;
+            progress += (100 / (duration / 100));
+            if (fill) fill.style.width = progress + '%';
+            if (progress >= 100) nextStory();
+        }, 100);
+    }
+
+    function nextStory() {
+        clearInterval(progressInterval);
+        document.getElementById('storyVideo').pause();
+        if (storyIndex < stories.length - 1) { storyIndex++; renderProgressBars(); showStory(); }
+        else closeViewer();
+    }
+
+    function prevStory() {
+        clearInterval(progressInterval);
+        document.getElementById('storyVideo').pause();
+        if (storyIndex > 0) { storyIndex--; renderProgressBars(); showStory(); }
+    }
+
+    function closeViewer() {
+        clearInterval(progressInterval);
+        document.getElementById('storyVideo').pause();
+        window.history.back();
+    }
+
+    function openManageModal() { isPaused = true; document.getElementById('manageModal').classList.add('open'); }
+    function closeManageModal() { isPaused = false; document.getElementById('manageModal').classList.remove('open'); }
+    function editHighlight() { closeManageModal(); openEditModal(); }
+
+    let editSelectedIds = [];
+    async function openEditModal() {
+        isPaused = true;
+        editSelectedIds = [...stories];
+        document.getElementById('editTitle').value = highlightData.title || '';
+        document.getElementById('editModal').classList.add('open');
+        const grid = document.getElementById('editStoryGrid');
+        grid.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px;text-align:center;grid-column:span 3">불러오는 중...</div>';
+        try {
+            const res = await fetch('/story/archive');
+            const archived = await res.json();
+            if (!archived || archived.length === 0) {
+                grid.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px;text-align:center;grid-column:span 3">보관된 스토리가 없습니다</div>';
+                return;
+            }
+            grid.innerHTML = '';
+            archived.forEach(story => {
+                const item = document.createElement('div');
+                item.className = 'edit-story-item' + (editSelectedIds.includes(story.sid) ? ' selected' : '');
+                item.dataset.sid = story.sid;
+                const imgSrc = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '';
+                item.innerHTML = `<img src="${imgSrc}">`;
+                item.onclick = () => {
+                    if (item.classList.contains('selected')) { item.classList.remove('selected'); editSelectedIds = editSelectedIds.filter(id => id !== story.sid); }
+                    else { item.classList.add('selected'); editSelectedIds.push(story.sid); }
+                };
+                grid.appendChild(item);
+            });
+        } catch { grid.innerHTML = '<div style="color:rgba(255,255,255,0.4);font-size:13px;padding:20px;text-align:center;grid-column:span 3">불러오기 실패</div>'; }
+    }
+
+    function closeEditModal() { document.getElementById('editModal').classList.remove('open'); isPaused = false; }
+
+    async function saveEdit() {
+        const title = document.getElementById('editTitle').value.trim();
+        if (!title || editSelectedIds.length === 0) { alert('제목과 스토리를 입력해주세요.'); return; }
+        const btn = document.getElementById('editSaveBtn');
+        btn.disabled = true; btn.textContent = '저장 중...';
+        try {
+            const res = await fetch(`/highlight/${hid}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, storyIds: editSelectedIds }) });
+            if (res.ok) {
+                stories = editSelectedIds;
+                highlightData.title = title;
+                document.getElementById('highlightTitle').textContent = title;
+                closeEditModal();
+                if (storyIndex >= stories.length) storyIndex = stories.length - 1;
+                renderProgressBars(); showStory();
+            } else alert('저장 실패');
+        } catch { alert('오류가 발생했습니다.'); }
+        finally { btn.disabled = false; btn.textContent = '저장'; }
+    }
+
+    async function removeCurrentStory() {
+        closeManageModal();
+        if (!confirm('이 스토리를 하이라이트에서 제거할까요?')) return;
+        try {
+            const currentStoryIds = stories.filter((_, i) => i !== storyIndex);
+            const res = await fetch(`/highlight/${hid}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ storyIds: currentStoryIds }) });
+            if (res.ok) {
+                stories = currentStoryIds;
+                if (stories.length === 0) { closeViewer(); return; }
+                if (storyIndex >= stories.length) storyIndex = stories.length - 1;
+                renderProgressBars(); showStory();
+            }
+        } catch { alert('오류가 발생했습니다.'); }
+    }
+
+    async function deleteHighlight() {
+        closeManageModal();
+        if (!confirm('하이라이트를 삭제할까요?')) return;
+        try {
+            const res = await fetch(`/highlight/${hid}`, { method: 'DELETE' });
+            if (res.ok) window.history.back();
+        } catch { alert('오류가 발생했습니다.'); }
+    }
+
+    function getTimeAgo(createdAt) {
+        if (!createdAt) return '';
+        const diff = Date.now() - new Date(createdAt).getTime();
+        const min = Math.floor(diff / 60000);
+        if (min < 1) return '방금 전';
+        if (min < 60) return `${min}분 전`;
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return `${hr}시간 전`;
+        return `${Math.floor(hr / 24)}일 전`;
+    }
+
+    const container = document.querySelector('.story-container');
+    container.addEventListener('mousedown', (e) => {
+        if (!e.target.closest('.reply-area') && !e.target.closest('.manage-modal') && !e.target.closest('.viewers-popup')) isPaused = true;
+    });
+    container.addEventListener('mouseup', () => isPaused = false);
+    container.addEventListener('mouseleave', () => isPaused = false);
+    container.addEventListener('touchstart', (e) => {
+        if (!e.target.closest('.reply-area') && !e.target.closest('.manage-modal') && !e.target.closest('.viewers-popup')) isPaused = true;
+    }, { passive: true });
+    container.addEventListener('touchend', () => isPaused = false);
+
+    loadHighlight();
+</script>
+</body>
+</html>

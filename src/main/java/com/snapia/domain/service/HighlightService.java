@@ -31,10 +31,13 @@ public class HighlightService {
 
         List<Story> stories = storyRepository.findAllById(highlightDTO.getStoryIds());
 
+        Story coverImg = storyRepository.findById(highlightDTO.getCoverStoryId())
+                .orElseThrow(()->new IllegalArgumentException("오류"));
+
         Highlight highlight = Highlight.builder()
                 .title(highlightDTO.getTitle())
                 .content(stories)
-                .coverImgUrl(highlightDTO.getCoverImgUrl())
+                .coverImgUrl(coverImg.getStoryImgUrl())
                 .users(users)
                 .build();
 
@@ -65,14 +68,14 @@ public class HighlightService {
 
     //하이라이트 개별 조회
     public HighlightDTO viewEachHighLight(Long hid, Long uid) {
-        Highlight highlights = highlightRepository.findByHidAndUsersUid(hid, uid)
+        Highlight highlights = highlightRepository.findById(hid)
                 .orElseThrow(()->new IllegalArgumentException("오류"));
 
         HighlightDTO highlightDTO = new HighlightDTO();
 
         highlightDTO.setHid(highlights.getHid());
         highlightDTO.setTitle(highlights.getTitle());
-        highlightDTO.setUserId(uid);
+        highlightDTO.setUserId(highlights.getUsers().getUid());
         highlightDTO.setStoryIds(highlights.getContent().stream().map(Story::getSid).toList());
         highlightDTO.setCoverImgUrl(highlights.getCoverImgUrl());
 
@@ -95,6 +98,16 @@ public class HighlightService {
       커버 이미지 수정
     * */
     public void updateHighLight(Long hid, HighlightDTO highlightDTO, Long uid) {
+        Highlight highlight = highlightRepository.findByHidAndUsersUid(hid, uid)
+                .orElseThrow(() -> new IllegalArgumentException("오류"));
+
+        Story coverImg = storyRepository.findById(highlightDTO.getCoverStoryId())
+                .orElseThrow(()->new IllegalArgumentException("오류"));
+
+        highlight.setTitle(highlightDTO.getTitle());
+        highlight.setContent(storyRepository.findAllById(highlightDTO.getStoryIds()));
+        highlight.setCoverImgUrl(coverImg.getStoryImgUrl());
+
 
     }
 

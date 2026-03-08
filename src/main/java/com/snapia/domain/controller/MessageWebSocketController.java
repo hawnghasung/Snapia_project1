@@ -5,7 +5,9 @@ import com.snapia.domain.dto.MessageRequestDTO;
 import com.snapia.domain.dto.MessageResponseDTO;
 import com.snapia.domain.entity.Message;
 import com.snapia.domain.entity.Room;
+import com.snapia.domain.entity.Story;
 import com.snapia.domain.entity.Users;
+import com.snapia.domain.repository.StoryRepository;
 import com.snapia.domain.service.MessageService;
 import com.snapia.domain.service.RoomService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ public class MessageWebSocketController {
     private final MessageService messageService;
     private final SimpMessagingTemplate messagingTemplate;
     private final RoomService roomService;
+    private final StoryRepository storyRepository;
 
 
     @MessageMapping("/dm/send")
@@ -38,13 +41,23 @@ public class MessageWebSocketController {
 
         Room room = roomService.findRoom(dto.getRoid());
 
+        Story story = null;
+        if (dto.getStoryId() != null) {
+            story = storyRepository.findById(dto.getStoryId())
+                    .orElseThrow(() -> new IllegalArgumentException("오류"));
+        }
+
+
         Message message = Message.builder()
                 .room(room)
                 .content(dto.getContent())
                 .users(user)
+                .replyToStory(story)
                 .build();
 
-        MessageResponseDTO response = messageService.sendMessage(message);
+        MessageResponseDTO response = messageService.sendMessage(message, story);
         messagingTemplate.convertAndSend("/s/dm/" + dto.getRoid(), response);
+
+
     }
 }

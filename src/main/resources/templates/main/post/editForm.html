@@ -25,24 +25,36 @@
         <form th:action="@{/post/{pid}(pid=${post.pid})}" method="post" enctype="multipart/form-data">
             <div class="p-6 flex flex-col gap-5">
 
-                <!-- 현재 이미지 -->
+                <!-- 현재 미디어 -->
                 <div th:if="${post.postImgUrl}">
-                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">현재 이미지</label>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">현재 미디어</label>
                     <div class="rounded-lg overflow-hidden border border-gray-200">
-                        <img th:src="@{'/upload/' + ${post.postImgUrl}}" alt="현재 이미지"
+                        <!-- 이미지 -->
+                        <img th:if="${post.mediaType == null or post.mediaType == 'IMAGE'}"
+                             th:src="@{'/upload/' + ${post.postImgUrl}}" alt="현재 이미지"
                              class="w-full max-h-64 object-contain block">
+                        <!-- 동영상 -->
+                        <video th:if="${post.mediaType == 'VIDEO'}"
+                               th:poster="@{'/upload/' + ${post.thumbnailUrl}}"
+                               controls playsinline preload="none"
+                               class="w-full max-h-64 block">
+                            <source th:src="@{'/upload/' + ${post.postImgUrl}}" type="video/mp4">
+                        </video>
                     </div>
                 </div>
 
-                <!-- 새 이미지 -->
+                <!-- 새 파일 (변경 시) -->
                 <div>
-                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">새 이미지 (변경 시)</label>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">새 사진 / 동영상 (변경 시)</label>
                     <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
                          onclick="document.getElementById('newFileInput').click()">
-                        <div class="text-sm text-gray-500">🖼️ 클릭하여 새 이미지 선택</div>
+                        <div class="text-sm text-gray-500">🖼️ 클릭하여 새 사진 또는 동영상 선택</div>
+                        <div class="text-xs text-gray-400 mt-1">사진: JPG, PNG | 동영상: MP4, MOV (최대 60초)</div>
                     </div>
-                    <input type="file" id="newFileInput" name="multipartFile" accept="image/*" class="hidden" onchange="previewNewImage(event)">
+                    <input type="file" id="newFileInput" name="multipartFile" accept="image/*,video/*" class="hidden" onchange="previewNewMedia(event)">
                     <img id="newPreviewImg" class="hidden w-full max-h-52 object-contain rounded-lg mt-3" alt="새 미리보기">
+                    <video id="newPreviewVideo" class="hidden w-full max-h-52 rounded-lg mt-3" controls playsinline></video>
+                    <div id="newFileInfo" class="hidden mt-2 text-xs text-gray-500 text-center"></div>
                 </div>
 
                 <!-- 내용 -->
@@ -75,16 +87,43 @@
 </div>
 
 <script>
-    function previewNewImage(event) {
+    function previewNewMedia(event) {
         const file = event.target.files[0];
-        if (file) {
+        if (!file) return;
+
+        const img   = document.getElementById('newPreviewImg');
+        const video = document.getElementById('newPreviewVideo');
+        const info  = document.getElementById('newFileInfo');
+
+        img.classList.add('hidden');
+        video.classList.add('hidden');
+
+        const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+
+        if (file.type.startsWith('video/')) {
+            video.src = URL.createObjectURL(file);
+            video.classList.remove('hidden');
+            video.onloadedmetadata = () => {
+                const duration = Math.floor(video.duration);
+                if (duration > 60) {
+                    info.textContent = `⚠️ ${duration}초 — 60초 이하만 가능합니다.`;
+                    info.style.color = '#ef4444';
+                } else {
+                    info.textContent = `✅ ${duration}초 · ${sizeMB}MB`;
+                    info.style.color = '#6b7280';
+                }
+                info.classList.remove('hidden');
+            };
+        } else {
             const reader = new FileReader();
             reader.onload = e => {
-                const img = document.getElementById('newPreviewImg');
                 img.src = e.target.result;
                 img.classList.remove('hidden');
             };
             reader.readAsDataURL(file);
+            info.textContent = `📁 ${sizeMB}MB`;
+            info.style.color = '#6b7280';
+            info.classList.remove('hidden');
         }
     }
 </script>

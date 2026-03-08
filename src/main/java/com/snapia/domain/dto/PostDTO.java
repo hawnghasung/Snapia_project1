@@ -27,4 +27,8 @@ public class PostDTO {
     private Integer commentCount;
     private LocalDateTime createdAt; // 이 필드가 있어야 함
 
+    private String mediaType;
+    private String thumbnailUrl;
+    private Integer duration;
+
 }

@@ -27,21 +27,14 @@ import java.util.UUID;
 public class StoryController {
     private final StoryService storyService;
 
-    // 스토리 등록
     @PostMapping
     @ResponseBody
     public Map<String, Object> createStory(@RequestParam("file") MultipartFile file,
                                            @AuthenticationPrincipal PrincipalDetails principalDetails) {
         Map<String, Object> result = new HashMap<>();
         try {
-            String uploadPath = "C:/snapia/upload/";
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            File saveFile = new File(uploadPath, fileName);
-            if (!saveFile.getParentFile().exists()) saveFile.getParentFile().mkdirs();
-            file.transferTo(saveFile);
-
             StoryDTO storyDTO = new StoryDTO();
-            storyDTO.setStoryImgUrl(fileName);
+            storyDTO.setMultipartFile(file); // ✅ 서비스에서 알아서 처리
 
             String snapiaId = principalDetails.getUsers().getSnapiaId();
             Story story = storyService.createStory(storyDTO, snapiaId);
@@ -69,7 +62,7 @@ public class StoryController {
     @ResponseBody
     public StoryDTO getStoryDetail(@PathVariable Long sid,
                                    @AuthenticationPrincipal PrincipalDetails principalDetails) {
-        StoryDTO dto = storyService.getStoryDetail(sid);
+        StoryDTO dto = storyService.getStoryDetail(sid, principalDetails.getUsers().getUid());
         if (principalDetails != null) {
             dto.setIsOwner(principalDetails.getUsers().getSnapiaId().equals(dto.getSnapiaId()));
         } else {
