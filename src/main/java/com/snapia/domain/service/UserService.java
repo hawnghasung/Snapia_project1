@@ -1,11 +1,14 @@
 package com.snapia.domain.service;
 
 import com.snapia.domain.constant.Role;
+import com.snapia.domain.dto.BusinessProfileDTO;
 import com.snapia.domain.dto.ProfileDTO;
 import com.snapia.domain.dto.ProfilePostDTO;
 import com.snapia.domain.dto.UserDTO;
+import com.snapia.domain.entity.BusinessProfile;
 import com.snapia.domain.entity.Post;
 import com.snapia.domain.entity.Users;
+import com.snapia.domain.repository.BusinessProfileRepository;
 import com.snapia.domain.repository.PostRepository;
 import com.snapia.domain.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -29,8 +32,9 @@ public class UserService {
     private final PostRepository postRepository;
     private final LikesService likesService;
     private final CommentService commentService;
+    private final BusinessProfileRepository businessProfileRepository;
 
-    public void signUp(UserDTO userDTO) {
+    public void signUp(UserDTO userDTO, BusinessProfileDTO businessProfileDTO) {
         Users users = Users.builder()
                 .snapiaId(userDTO.getSnapiaId())
                 .email(userDTO.getEmail())
@@ -38,9 +42,32 @@ public class UserService {
                 .phoneNum(userDTO.getPhoneNum())
                 .password(passwordEncoder.encode(userDTO.getPassword()))
                 .role(Role.USER)
+                .isBusiness(userDTO.isBusiness())
+                .gender(userDTO.getGender())
+                .profileImageUrl(userDTO.getProfileImageUrl())
+                .pubOrNot(userDTO.getPubOrNot())
                 .build();
 
+
         userRepository.save(users);
+
+        if (users.isBusiness() == true) {
+            BusinessProfile businessProfile = BusinessProfile.builder()
+                    .contact(businessProfileDTO.getContact())
+                    .category(businessProfileDTO.getCategory())
+                    .companyName(businessProfileDTO.getCompanyName())
+                    .operatingHours(businessProfileDTO.getOperatingHours())
+                    .introduce(businessProfileDTO.getIntroduce())
+                    .noticeMessage(businessProfileDTO.getNoticeMessage())
+                    .users(users)
+                    .build();
+
+            businessProfileRepository.save(businessProfile);
+
+            users.setBusinessProfile(businessProfile);
+
+            userRepository.save(users);
+        }
     }
 
 

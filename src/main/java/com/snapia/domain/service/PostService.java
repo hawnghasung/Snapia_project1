@@ -3,7 +3,9 @@ package com.snapia.domain.service;
 import com.snapia.domain.constant.PubOrNot;
 import com.snapia.domain.dto.PostDTO;
 import com.snapia.domain.entity.Post;
+import com.snapia.domain.entity.PostHashTag;
 import com.snapia.domain.entity.Users;
+import com.snapia.domain.repository.PostHashTagRepository;
 import com.snapia.domain.repository.PostRepository;
 import com.snapia.domain.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -21,6 +23,9 @@ public class PostService {
     private final UserRepository userRepository;
     private final PostRepository postRepository;
     private final FileService fileService;
+    private final HashTagService hashTagService;
+    private final PostHashTagRepository postHashTagRepository;
+    private final LikesService likesService;
 
     public void register(PostDTO postDTO, String snapiaId) {
         Users users = userRepository.findByLoginIdentifier(snapiaId)
@@ -52,6 +57,8 @@ public class PostService {
                 .build();
 
         postRepository.save(post);
+
+        hashTagService.saveHashTag(postDTO.getHashtags(), post);
     }
 
     public Post getPostById(Long pid) {
@@ -115,6 +122,40 @@ public class PostService {
         }
 
         postRepository.delete(post);
+    }
+
+    public List<String> getHashtags(Long pid) {
+        return postHashTagRepository.findByPostPid(pid).stream().map(pht -> pht.getHashTag().getHashTag())
+                .toList();
+
+    }
+
+    public List<PostDTO> getPostsByHashtag(String tag, String snapiaId) {
+        return postHashTagRepository.findByHashTagHashTag(tag).stream()
+                .map(pht -> {
+                    Post post = pht.getPost();
+                    List<String> hashtagList = postHashTagRepository.findByPostPid(post.getPid())
+                            .stream()
+                            .map(h -> h.getHashTag().getHashTag())
+                            .toList();
+                    boolean liked = likesService.isLikedByUser(post.getPid(), snapiaId);
+                    Long likeCount = likesService.getLikeCount(post.getPid());
+
+                    return PostDTO.builder()
+                            .pid(post.getPid())
+                            .content(post.getContent())
+                            .postImgUrl(post.getPostImgUrl())
+                            .mediaType(post.getMediaType())
+                            .thumbnailUrl(post.getThumbnailUrl())
+                            .likeCount(likeCount.intValue())
+                            .liked(liked)
+                            .hashtagList(hashtagList)
+                            .userSnapiaId(post.getUsers().getSnapiaId())
+                            .userProfileImageUrl(post.getUsers().getProfileImageUrl())
+                            .createdAt(post.getCreatedAt())
+                            .build();
+                })
+                .toList();
     }
 
     // 특정 사용자의 게시물 목록 조회

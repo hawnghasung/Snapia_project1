@@ -5,6 +5,7 @@ import lombok.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Setter
@@ -30,5 +31,11 @@ public class PostDTO {
     private String mediaType;
     private String thumbnailUrl;
     private Integer duration;
+
+    private List<String> hashtags;
+
+    private boolean liked;
+    private List<String> hashtagList;
+
 
 }

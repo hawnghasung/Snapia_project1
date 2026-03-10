@@ -481,9 +481,19 @@
 
                 searchTimeout = setTimeout(async () => {
                     try {
-                        const res   = await fetch(`/search?word=${encodeURIComponent(query)}`);
-                        const users = await res.json();
-                        renderSearchResults(users);
+                        if (query.startsWith('#')) {
+                            // 해시태그 검색
+                            const keyword = query.slice(1);
+                            if (!keyword) { searchDropdown.innerHTML = '<div class="search-no-result">태그를 입력하세요.</div>'; return; }
+                            const res = await fetch(`/hashtag/search?keyword=${encodeURIComponent(keyword)}`);
+                            const tags = await res.json();
+                            renderHashtagResults(tags);
+                        } else {
+                            // 유저 검색
+                            const res = await fetch(`/search?word=${encodeURIComponent(query)}`);
+                            const users = await res.json();
+                            renderSearchResults(users);
+                        }
                     } catch (e) {
                         searchDropdown.innerHTML = '<div class="search-no-result">오류가 발생했습니다.</div>';
                     }
@@ -494,6 +504,27 @@
                 if (this.value.trim() && searchDropdown.innerHTML) {
                     searchDropdown.classList.add('show');
                 }
+            });
+        }
+
+        function renderHashtagResults(tags) {
+            searchDropdown.innerHTML = '';
+            if (!tags.length) {
+                searchDropdown.innerHTML = '<div class="search-no-result">검색 결과가 없습니다.</div>';
+                return;
+            }
+            tags.forEach(tag => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                item.innerHTML = `
+                <div style="width:44px;height:44px;border-radius:50%;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">#</div>
+                <div class="search-result-info">
+                    <div class="search-result-id">#${tag}</div>
+                </div>`;
+                item.addEventListener('click', () => {
+                    window.location.href = `/post/hashtag/result?tag=${encodeURIComponent(tag)}`;
+                });
+                searchDropdown.appendChild(item);
             });
         }
 

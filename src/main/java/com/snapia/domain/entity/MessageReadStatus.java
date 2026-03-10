@@ -27,4 +27,8 @@ public class MessageReadStatus extends BaseTimeEntity {
 
     @Enumerated(EnumType.STRING)
     private ReadStatus readStatus;
+
+    @ManyToOne
+    @JoinColumn(name = "inquiry_id")
+    private Inquiry inquiry;
 }

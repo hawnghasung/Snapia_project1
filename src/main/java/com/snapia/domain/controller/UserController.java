@@ -1,10 +1,7 @@
 package com.snapia.domain.controller;
 
 import com.snapia.domain.auth.PrincipalDetails;
-import com.snapia.domain.dto.ProfileDTO;
-import com.snapia.domain.dto.ProfilePostDTO;
-import com.snapia.domain.dto.StoryDTO;
-import com.snapia.domain.dto.UserDTO;
+import com.snapia.domain.dto.*;
 import com.snapia.domain.entity.Users;
 import com.snapia.domain.service.FollowService;
 import com.snapia.domain.service.StoryService;
@@ -37,12 +34,12 @@ public class UserController {
     }
 
     @PostMapping("/join")
-    public String signUpPost(@Valid UserDTO userDTO, BindingResult bindingResult) {
+    public String signUpPost(@Valid UserDTO userDTO, BusinessProfileDTO businessProfileDTO, BindingResult bindingResult) {
         if (bindingResult.hasErrors()) {
             log.info("회원 가입 실패 : " + bindingResult.hasErrors());
             return "main/join";
         }
-        userService.signUp(userDTO);
+        userService.signUp(userDTO, businessProfileDTO);
         return "redirect:/main";
     }
 

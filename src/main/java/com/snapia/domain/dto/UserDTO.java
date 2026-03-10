@@ -1,5 +1,7 @@
 package com.snapia.domain.dto;
 
+import com.snapia.domain.constant.Gender;
+import com.snapia.domain.constant.PubOrNot;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
@@ -30,4 +32,12 @@ public class UserDTO {
     private String phoneNum;
 
     private String profileImageUrl;
+
+    private boolean isBusiness;
+
+    private Gender gender;
+
+    private PubOrNot pubOrNot;
+
+    private Long businessProfile_id;
 }

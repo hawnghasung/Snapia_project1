@@ -50,5 +50,11 @@ public class Users extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     private PubOrNot pubOrNot;
 
+    private boolean isBusiness;
+
+    @OneToOne
+    @JoinColumn(name = "business_id")
+    private BusinessProfile businessProfile;
+
 
 }

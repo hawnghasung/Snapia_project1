@@ -60,6 +60,9 @@ public class PostController {
             model.addAttribute("isLiked", isLiked);
         }
 
+        List<String> hashtags = postService.getHashtags(pid);
+        model.addAttribute("hashtags", hashtags);
+
         return "main/post/detail";
     }
 
@@ -71,10 +74,13 @@ public class PostController {
 
     // 게시물 등록 → 내 프로필로 이동
     @PostMapping
-    public String create(PostDTO postDTO, @AuthenticationPrincipal PrincipalDetails principalDetails) {
+    public String create(PostDTO postDTO, @RequestParam(value = "hashtags", required = false) List<String> hashtags,
+                         @AuthenticationPrincipal PrincipalDetails principalDetails) {
         if (principalDetails == null) {
             return "redirect:/login";
         }
+
+        postDTO.setHashtags(hashtags);
 
         String snapiaId = principalDetails.getUsers().getSnapiaId();
         postService.register(postDTO, snapiaId);
@@ -141,4 +147,15 @@ public class PostController {
 
         return result;
     }
+
+    @GetMapping("/hashtag/result")
+    public String searchByHashtag(@RequestParam String tag, Model model,
+                                  @AuthenticationPrincipal PrincipalDetails principalDetails) {
+        String snapiaId = principalDetails.getUsers().getSnapiaId();
+        model.addAttribute("posts", postService.getPostsByHashtag(tag, snapiaId));
+        model.addAttribute("tag", tag);
+        return "main/post/hashtagResult";
+    }
+
+
 }

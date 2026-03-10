@@ -29,4 +29,8 @@ public class Message extends BaseTimeEntity {
     @ManyToOne
     @JoinColumn(name = "story_id")
     private Story replyToStory;
+
+    @ManyToOne
+    @JoinColumn(name = "inquiry_id")
+    private Inquiry inquiry;
 }

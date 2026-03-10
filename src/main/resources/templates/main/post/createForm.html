@@ -59,6 +59,20 @@
                         <option value="PRIVATE">🔒 비공개</option>
                     </select>
                 </div>
+
+                <!-- 해시태그 -->
+                <div>
+                    <label class="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">해시태그</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="hashtagInput"
+                               class="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg text-sm text-gray-800 outline-none focus:border-gray-400 transition-colors placeholder-gray-400"
+                               placeholder="#태그 입력 후 Enter">
+                        <button type="button" onclick="addHashtag()"
+                                class="px-4 py-2 text-sm font-semibold text-white bg-gray-700 hover:bg-gray-800 rounded-lg transition-colors">추가</button>
+                    </div>
+                    <div id="hashtagList" class="flex flex-wrap gap-2 mt-2"></div>
+                    <div id="hashtagHiddenInputs"></div>
+                </div>
             </div>
 
             <div class="px-6 py-4 border-t border-gray-200 flex gap-2 justify-end">
@@ -72,6 +86,7 @@
 </div>
 
 <script>
+    // ── 미디어 미리보기 ─────────────────────────────
     function previewMedia(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -88,27 +103,22 @@
         const sizeMB = (file.size / 1024 / 1024).toFixed(1);
 
         if (file.type.startsWith('video/')) {
-            // 동영상 미리보기
             video.src = URL.createObjectURL(file);
             video.classList.remove('hidden');
             icon.textContent = '🎬';
             text.textContent = file.name;
-
-            // 길이 체크
             video.onloadedmetadata = () => {
                 const duration = Math.floor(video.duration);
                 if (duration > 60) {
                     info.textContent = `⚠️ 동영상이 ${duration}초입니다. 60초 이하만 업로드 가능합니다.`;
-                    info.classList.remove('hidden');
                     info.style.color = '#ef4444';
                 } else {
                     info.textContent = `✅ ${duration}초 · ${sizeMB}MB`;
-                    info.classList.remove('hidden');
                     info.style.color = '#6b7280';
                 }
+                info.classList.remove('hidden');
             };
         } else {
-            // 이미지 미리보기
             const reader = new FileReader();
             reader.onload = e => {
                 img.src = e.target.result;
@@ -122,6 +132,93 @@
             info.style.color = '#6b7280';
         }
     }
+
+    // ── 해시태그 ────────────────────────────────────
+    const hashtags = [];
+    let hashtagTimeout;
+
+    function addHashtag(tagValue) {
+        const input = document.getElementById('hashtagInput');
+        let tag = (tagValue || input.value).trim();
+        if (!tag) return;
+        if (!tag.startsWith('#')) tag = '#' + tag;
+        tag = tag.split(' ')[0];
+        if (hashtags.includes(tag)) { input.value = ''; closeHashtagDropdown(); return; }
+        hashtags.push(tag);
+        renderHashtags();
+        input.value = '';
+        closeHashtagDropdown();
+    }
+
+    function removeHashtag(tag) {
+        const idx = hashtags.indexOf(tag);
+        if (idx > -1) hashtags.splice(idx, 1);
+        renderHashtags();
+    }
+
+    function renderHashtags() {
+        const list = document.getElementById('hashtagList');
+        const hiddens = document.getElementById('hashtagHiddenInputs');
+        list.innerHTML = hashtags.map(tag => `
+            <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 text-sm rounded-full border border-blue-200">
+                ${tag}
+                <button type="button" onclick="removeHashtag('${tag}')" class="text-blue-400 hover:text-blue-600 font-bold leading-none">×</button>
+            </span>
+        `).join('');
+        hiddens.innerHTML = hashtags.map(tag =>
+            `<input type="hidden" name="hashtags" value="${tag.replace('#', '')}">`
+        ).join('');
+    }
+
+    // 자동완성 드롭다운
+    function closeHashtagDropdown() {
+        const dd = document.getElementById('hashtagDropdown');
+        if (dd) dd.remove();
+    }
+
+    function showHashtagDropdown(tags) {
+        closeHashtagDropdown();
+        if (!tags || tags.length === 0) return;
+        const input = document.getElementById('hashtagInput');
+        const wrapper = input.parentElement.parentElement;
+
+        const dd = document.createElement('div');
+        dd.id = 'hashtagDropdown';
+        dd.className = 'absolute bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-full mt-1 overflow-hidden';
+        dd.style.top = input.parentElement.offsetTop + input.parentElement.offsetHeight + 'px';
+
+        tags.forEach(tag => {
+            const item = document.createElement('div');
+            item.className = 'px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2';
+            item.innerHTML = `<span class="text-blue-500 font-semibold">#</span>${tag}`;
+            item.onclick = () => addHashtag(tag);
+            dd.appendChild(item);
+        });
+
+        wrapper.style.position = 'relative';
+        wrapper.appendChild(dd);
+    }
+
+    document.getElementById('hashtagInput').addEventListener('input', function() {
+        const val = this.value.trim().replace(/^#/, '');
+        clearTimeout(hashtagTimeout);
+        if (!val) { closeHashtagDropdown(); return; }
+        hashtagTimeout = setTimeout(async () => {
+            try {
+                const res = await fetch(`/hashtag/search?keyword=${encodeURIComponent(val)}`);
+                const tags = await res.json();
+                showHashtagDropdown(tags);
+            } catch(e) { closeHashtagDropdown(); }
+        }, 250);
+    });
+
+    document.getElementById('hashtagInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); addHashtag(); }
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!document.getElementById('hashtagInput').contains(e.target)) closeHashtagDropdown();
+    });
 </script>
 
 <th:block th:replace="~{noti :: notiScript}"></th:block>

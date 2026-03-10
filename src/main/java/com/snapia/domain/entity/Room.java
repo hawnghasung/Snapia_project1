@@ -23,4 +23,8 @@ public class Room extends BaseTimeEntity {
     @ManyToOne
     @JoinColumn(name = "receiver_id")
     private Users receiver;
+
+    @ManyToOne
+    @JoinColumn(name = "inquiry_id")
+    private Inquiry inquiry;
 }
