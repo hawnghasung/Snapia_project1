@@ -21,12 +21,10 @@ public class Appointment extends BaseTimeEntity {
     private Long aid;
 
     //일정 요청 / 수락 / 거절 / 날짜·시간 / 상태값
-    private boolean suggest;
 
-    @Enumerated(EnumType.STRING)
-    private SuggestStatus suggestStatus;
 
-    private LocalDateTime suggestTime;
+    private LocalDateTime requestTime;
+
 
     @Enumerated(EnumType.STRING)
     private AppointmentStatus appointmentStatus;
@@ -39,5 +37,7 @@ public class Appointment extends BaseTimeEntity {
     @ManyToOne
     @JoinColumn(name = "business_id")
     private BusinessProfile businessProfile; // 요청받은 비즈니스
+
+    private String rejectReason;
 
 }

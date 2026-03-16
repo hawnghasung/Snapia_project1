@@ -51,7 +51,7 @@ public class UserService {
 
         userRepository.save(users);
 
-        if (users.isBusiness() == true) {
+        if (users.isBusiness()) {
             BusinessProfile businessProfile = BusinessProfile.builder()
                     .contact(businessProfileDTO.getContact())
                     .category(businessProfileDTO.getCategory())
@@ -66,13 +66,12 @@ public class UserService {
 
             users.setBusinessProfile(businessProfile);
 
-            userRepository.save(users);
         }
     }
 
 
 
-    public Users profileUpdate(ProfileDTO profileDTO, Long uid) {
+    public ProfileDTO profileUpdate(ProfileDTO profileDTO,BusinessProfileDTO businessProfileDTO,Long uid) {
         Users users = userRepository.findById(uid)
                 .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
@@ -104,7 +103,29 @@ public class UserService {
             users.setEmail(profileDTO.getEmail());
         }
 
-        return users;
+        if (users.isBusiness()) {
+            BusinessProfile businessProfile = users.getBusinessProfile();
+            // 기존 프로필 수정
+            businessProfile.setContact(businessProfileDTO.getContact());
+            businessProfile.setCategory(businessProfileDTO.getCategory());
+            businessProfile.setCompanyName(businessProfileDTO.getCompanyName());
+            businessProfile.setOperatingHours(businessProfileDTO.getOperatingHours());
+            businessProfile.setIntroduce(businessProfileDTO.getIntroduce());
+            businessProfile.setNoticeMessage(businessProfileDTO.getNoticeMessage());
+
+            users.setBusinessProfile(businessProfile);
+        }
+
+        return ProfileDTO.builder()
+                .name(users.getName())
+                .profileImageUrl(users.getProfileImageUrl())
+                .snapiaId(users.getSnapiaId())
+                .password(users.getPassword())
+                .email(users.getEmail())
+                .bio(users.getBio())
+                .gender(users.getGender())
+                .businessProfile_id(users.isBusiness() ? users.getBusinessProfile().getBpid() : null)
+                .build();
     }
 
     public List<ProfilePostDTO> getProfilePosts(Long userId) {

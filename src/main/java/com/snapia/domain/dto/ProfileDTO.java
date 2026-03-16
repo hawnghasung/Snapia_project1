@@ -25,5 +25,7 @@ public class ProfileDTO {
 
     private String password;
 
+    private Long businessProfile_id;
+
     private String email;
 }

@@ -4,6 +4,9 @@ public enum AppointmentStatus {
     WAIT,
     PROGRESS,
     COMPLETE,
-    CANCEL
+    CANCEL,
+    SUGGESTED,
+    ACCEPT,
+    DECLINE
 
 }

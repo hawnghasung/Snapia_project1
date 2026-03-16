@@ -59,6 +59,31 @@
             font-weight: 600;
             color: #111;
         }
+        .dm-header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .ig-pill-btn {
+            border: 1px solid #dbdbdb;
+            background: #fff;
+            color: #262626;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 8px 12px;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: background 0.15s, opacity 0.15s;
+            white-space: nowrap;
+        }
+        .ig-pill-btn:hover { background: #fafafa; }
+        .ig-pill-btn.primary {
+            background: #0095f6;
+            border-color: #0095f6;
+            color: #fff;
+        }
+        .ig-pill-btn.primary:hover { opacity: 0.85; }
 
         /* 메시지 영역 */
         .dm-messages {
@@ -81,7 +106,7 @@
         }
         .msg-row.mine { flex-direction: row-reverse; }
 
-        /* 메시지 그룹 (스토리 답장 + 메시지 묶음) */
+        /* 메시지 그룹 */
         .msg-group {
             display: flex;
             flex-direction: column;
@@ -157,7 +182,7 @@
             border-bottom-left-radius: 6px;
         }
 
-        /* 메타 (시간/읽음) */
+        /* 메타 */
         .msg-meta {
             display: flex;
             flex-direction: column;
@@ -208,6 +233,215 @@
         }
         .dm-send-btn:hover { opacity: 0.75; }
         .dm-send-btn:disabled { color: #b2dffc; cursor: default; }
+
+        /* ───────── 예약 모달 ───────── */
+        .ap-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .ap-modal-overlay.active { display: flex; }
+
+        .ap-modal {
+            width: 100%;
+            max-width: 420px;
+            background: #fff;
+            border-radius: 14px;
+            border: 1px solid #efefef;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.18);
+            overflow: hidden;
+        }
+        .ap-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid #efefef;
+            background: #fff;
+        }
+        .ap-modal-title {
+            font-size: 15px;
+            font-weight: 800;
+            color: #111;
+        }
+        .ap-modal-close {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            color: #262626;
+            line-height: 1;
+            padding: 2px 6px;
+        }
+        .ap-modal-body {
+            padding: 16px;
+        }
+
+        .ap-step {
+            display: none;
+        }
+        .ap-step.active { display: block; }
+
+        .ap-subtitle {
+            font-size: 13px;
+            color: #8e8e8e;
+            margin-bottom: 10px;
+        }
+
+        .ap-field {
+            margin-bottom: 12px;
+        }
+        .ap-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #262626;
+            margin-bottom: 6px;
+        }
+        .ap-input {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #dbdbdb;
+            border-radius: 10px;
+            background: #fafafa;
+            outline: none;
+            font-size: 14px;
+        }
+        .ap-input:focus {
+            background: #fff;
+            border-color: #0095f6;
+        }
+
+        .ap-card-group {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .ap-radio-card {
+            border: 1px solid #dbdbdb;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            background: #fff;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .ap-radio-card:hover { background: #fafafa; }
+        .ap-radio-card.selected {
+            border-color: #0095f6;
+            background: rgba(0,149,246,0.06);
+        }
+        .ap-radio-dot {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid #cfcfcf;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .ap-radio-card.selected .ap-radio-dot {
+            border-color: #0095f6;
+        }
+        .ap-radio-card.selected .ap-radio-dot::after {
+            content: '';
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #0095f6;
+            display: block;
+        }
+        .ap-radio-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 2px;
+        }
+        .ap-radio-desc {
+            font-size: 12px;
+            color: #8e8e8e;
+        }
+
+        .ap-checklist {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .ap-check-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid #dbdbdb;
+            border-radius: 12px;
+            background: #fff;
+        }
+        .ap-check-item:hover { background: #fafafa; }
+        .ap-check-item input[type="checkbox"] {
+            margin-top: 3px;
+            width: 18px;
+            height: 18px;
+            accent-color: #0095f6;
+            flex-shrink: 0;
+        }
+        .ap-check-text {
+            flex: 1;
+            min-width: 0;
+        }
+        .ap-check-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: #111;
+            margin-bottom: 2px;
+        }
+        .ap-check-desc {
+            font-size: 12px;
+            color: #8e8e8e;
+            line-height: 1.35;
+        }
+
+        .ap-footer {
+            display: flex;
+            gap: 10px;
+            padding: 14px 16px;
+            border-top: 1px solid #efefef;
+            background: #fff;
+        }
+        .ap-footer .ig-pill-btn { flex: 1; justify-content: center; }
+        .ap-footer .ig-pill-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .ap-mini {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #8e8e8e;
+        }
+        .ap-mini strong { color: #262626; }
+
+        .ap-error {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(237,73,86,0.35);
+            background: rgba(237,73,86,0.06);
+            border-radius: 12px;
+            color: #ed4956;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .ap-error.show { display: block; }
     </style>
 </head>
 <body>
@@ -220,13 +454,23 @@
         <img th:src="${opponent?.profileImageUrl != null} ? '/upload/' + ${opponent.profileImageUrl} : 'https://i.pravatar.cc/150?u=' + ${opponent?.uid}"
              alt="프로필" class="dm-header-avatar">
         <span class="dm-header-name" th:text="${opponent?.snapiaId}">사용자</span>
+
+        <div class="dm-header-right">
+            <!-- 상대가 비즈니스면 예약 신청 버튼 노출 -->
+            <button type="button"
+                    class="ig-pill-btn primary"
+                    th:if="${opponent != null and opponent.business}"
+                    onclick="openAppointmentModal()">
+                예약 신청
+            </button>
+        </div>
     </div>
 
     <div class="dm-messages" id="messageList">
         <div th:each="msg : ${messageList}">
             <div th:class="${msg.senderId == currentUid} ? 'msg-row mine' : 'msg-row'">
                 <div class="msg-group">
-                    <!-- 스토리 답장 미리보기 (서버에서 replyStoryImgUrl 있을 때) -->
+                    <!-- 스토리 답장 미리보기 -->
                     <div th:if="${msg.replyStoryImgUrl != null}"
                          th:class="${msg.senderId == currentUid} ? 'story-reply-preview' : 'story-reply-preview'"
                          th:onclick="${msg.replyStorySid != null} ? 'location.href=\'/story/\' + ' + ${msg.replyStorySid} : ''">
@@ -238,6 +482,7 @@
                             <div class="story-reply-label">스토리에 답장</div>
                         </div>
                     </div>
+
                     <!-- 만료된 스토리 -->
                     <div th:if="${msg.replyStoryImgUrl == null and msg.replyStorySid != null}"
                          class="story-reply-preview">
@@ -247,6 +492,7 @@
                             <div class="story-reply-expired-text">만료된 스토리</div>
                         </div>
                     </div>
+
                     <div th:class="${msg.senderId == currentUid} ? 'msg-bubble mine' : 'msg-bubble theirs'"
                          th:text="${msg.content}">메시지</div>
                 </div>
@@ -267,9 +513,118 @@
     </div>
 </div>
 
+<!-- ================= 예약 모달 (3-step) ================= -->
+<div id="apModalOverlay" class="ap-modal-overlay" onclick="closeAppointmentModalOutside(event)">
+    <div class="ap-modal">
+        <div class="ap-modal-header">
+            <div class="ap-modal-title" id="apModalTitle">예약 신청</div>
+            <button type="button" class="ap-modal-close" onclick="closeAppointmentModal()">×</button>
+        </div>
+
+        <div class="ap-modal-body">
+            <div id="apError" class="ap-error"></div>
+
+            <!-- STEP 1: 날짜/시간 -->
+            <section id="apStep1" class="ap-step active">
+                <div class="ap-subtitle">원하는 예약 날짜/시간을 선택해주세요.</div>
+
+                <div class="ap-field">
+                    <label class="ap-label" for="apDatetime">예약 날짜/시간</label>
+                    <input id="apDatetime" class="ap-input" type="datetime-local">
+                </div>
+
+                <div class="ap-mini">
+                    상대: <strong th:text="${opponent?.snapiaId}">상대</strong>
+                </div>
+            </section>
+
+            <!-- STEP 2: 결제 방식 (연동 X, UI만) -->
+            <section id="apStep2" class="ap-step">
+                <div class="ap-subtitle">결제 방식을 선택해주세요. (연동은 나중에)</div>
+
+                <div class="ap-card-group" id="apPayGroup">
+                    <div class="ap-radio-card" data-pay="CARD" onclick="selectPayMethod('CARD')">
+                        <span class="ap-radio-dot"></span>
+                        <div>
+                            <div class="ap-radio-title">카드 결제</div>
+                            <div class="ap-radio-desc">나중에 PG 연동 예정</div>
+                        </div>
+                    </div>
+
+                    <div class="ap-radio-card" data-pay="TRANSFER" onclick="selectPayMethod('TRANSFER')">
+                        <span class="ap-radio-dot"></span>
+                        <div>
+                            <div class="ap-radio-title">계좌이체</div>
+                            <div class="ap-radio-desc">나중에 자동입금/확인 연동 가능</div>
+                        </div>
+                    </div>
+
+                    <div class="ap-radio-card" data-pay="ONSITE" onclick="selectPayMethod('ONSITE')">
+                        <span class="ap-radio-dot"></span>
+                        <div>
+                            <div class="ap-radio-title">현장 결제</div>
+                            <div class="ap-radio-desc">현장에서 결제(임시)</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 3: 토스처럼 체크 -->
+            <section id="apStep3" class="ap-step">
+                <div class="ap-subtitle">아래 항목을 확인하고 동의해주세요.</div>
+
+                <div class="ap-checklist">
+                    <label class="ap-check-item">
+                        <input type="checkbox" class="ap-check" data-required="true">
+                        <div class="ap-check-text">
+                            <div class="ap-check-title">예약 정보를 확인했어요</div>
+                            <div class="ap-check-desc">날짜/시간 및 상대 정보를 확인했습니다.</div>
+                        </div>
+                    </label>
+
+                    <label class="ap-check-item">
+                        <input type="checkbox" class="ap-check" data-required="true">
+                        <div class="ap-check-text">
+                            <div class="ap-check-title">취소/변경 정책에 동의해요</div>
+                            <div class="ap-check-desc">정책은 추후 화면/연동으로 보완 예정입니다.</div>
+                        </div>
+                    </label>
+
+                    <label class="ap-check-item">
+                        <input type="checkbox" class="ap-check" data-required="true">
+                        <div class="ap-check-text">
+                            <div class="ap-check-title">결제 방식 선택을 확인했어요</div>
+                            <div class="ap-check-desc">현재는 UI만 제공되며 실제 결제는 나중에 연동합니다.</div>
+                        </div>
+                    </label>
+
+                    <label class="ap-check-item">
+                        <input type="checkbox" class="ap-check">
+                        <div class="ap-check-text">
+                            <div class="ap-check-title">마케팅 수신 동의(선택)</div>
+                            <div class="ap-check-desc">선택 항목입니다.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="ap-mini" id="apSummary"></div>
+            </section>
+        </div>
+
+        <div class="ap-footer">
+            <button type="button" class="ig-pill-btn" id="apBackBtn" onclick="apBack()">이전</button>
+            <button type="button" class="ig-pill-btn primary" id="apNextBtn" onclick="apNext()">다음</button>
+        </div>
+    </div>
+</div>
+
 <script th:inline="javascript">
     const roomId = [[${roomId}]];
     const currentUid = [[${currentUid}]];
+
+    // 상대 비즈니스 프로필 id (예약 대상)
+    const opponentIsBusiness = [[${opponent != null and opponent.business}]];
+    const opponentBusinessProfileId = [[${opponent?.businessProfile?.bpid}]];
 
     const messageList = document.getElementById('messageList');
     messageList.scrollTop = messageList.scrollHeight;
@@ -313,7 +668,6 @@
         const group = document.createElement('div');
         group.className = 'msg-group';
 
-        // 스토리 답장 미리보기
         if (msg.replyStoryImgUrl || msg.replyStorySid) {
             const preview = document.createElement('div');
             preview.className = 'story-reply-preview';
@@ -372,6 +726,215 @@
         row.appendChild(meta);
         messageList.appendChild(row);
         messageList.scrollTop = messageList.scrollHeight;
+    }
+
+    // ───────────────── 예약 모달 로직 (3단계) ─────────────────
+    let apStep = 1;
+    let apPayMethod = null;
+
+    const apOverlay = document.getElementById('apModalOverlay');
+    const apTitle = document.getElementById('apModalTitle');
+    const apError = document.getElementById('apError');
+
+    const apStep1 = document.getElementById('apStep1');
+    const apStep2 = document.getElementById('apStep2');
+    const apStep3 = document.getElementById('apStep3');
+
+    const apDatetime = document.getElementById('apDatetime');
+    const apBackBtn = document.getElementById('apBackBtn');
+    const apNextBtn = document.getElementById('apNextBtn');
+    const apChecks = Array.from(document.querySelectorAll('.ap-check'));
+    const apSummary = document.getElementById('apSummary');
+
+    apChecks.forEach(ch => ch.addEventListener('change', syncApButtons));
+
+    function openAppointmentModal() {
+        // 상대가 비즈니스가 아니면 버튼이 안 보이도록 했지만, 안전 가드
+        if (!opponentIsBusiness) {
+            alert('비즈니스 계정에게만 예약 신청이 가능합니다.');
+            return;
+        }
+        if (!opponentBusinessProfileId) {
+            alert('상대 비즈니스 프로필 정보를 찾지 못했습니다.');
+            return;
+        }
+
+        apOverlay.classList.add('active');
+        resetAppointmentModal();
+        syncApButtons();
+    }
+
+    function closeAppointmentModal() {
+        apOverlay.classList.remove('active');
+    }
+
+    function closeAppointmentModalOutside(e) {
+        if (e.target === apOverlay) closeAppointmentModal();
+    }
+
+    function resetAppointmentModal() {
+        apStep = 1;
+        apPayMethod = null;
+
+        apDatetime.value = '';
+        apChecks.forEach(c => c.checked = false);
+
+        // 선택 UI 초기화
+        document.querySelectorAll('.ap-radio-card').forEach(el => el.classList.remove('selected'));
+
+        apError.classList.remove('show');
+        apError.textContent = '';
+
+        renderApStep();
+    }
+
+    function renderApStep() {
+        apStep1.classList.toggle('active', apStep === 1);
+        apStep2.classList.toggle('active', apStep === 2);
+        apStep3.classList.toggle('active', apStep === 3);
+
+        apBackBtn.style.visibility = (apStep === 1) ? 'hidden' : 'visible';
+        apTitle.textContent =
+            apStep === 1 ? '예약 신청' :
+                apStep === 2 ? '결제 방식 선택' :
+                    '예약 확인';
+
+        apNextBtn.textContent = (apStep === 3) ? '예약 요청' : '다음';
+
+        if (apStep === 3) {
+            apSummary.innerHTML = buildSummaryHtml();
+        }
+        syncApButtons();
+    }
+
+    function showApError(msg) {
+        apError.textContent = msg;
+        apError.classList.add('show');
+    }
+
+    function clearApError() {
+        apError.textContent = '';
+        apError.classList.remove('show');
+    }
+
+    function apNext() {
+        clearApError();
+
+        if (apStep === 1) {
+            if (!apDatetime.value) {
+                showApError('예약 날짜/시간을 선택해주세요.');
+                return;
+            }
+            apStep = 2;
+            renderApStep();
+            return;
+        }
+
+        if (apStep === 2) {
+            if (!apPayMethod) {
+                showApError('결제 방식을 선택해주세요.');
+                return;
+            }
+            apStep = 3;
+            renderApStep();
+            return;
+        }
+
+        // STEP 3: submit
+        if (!canSubmitAppointment()) {
+            showApError('필수 항목을 모두 체크해주세요.');
+            return;
+        }
+        submitAppointmentRequest();
+    }
+
+    function apBack() {
+        clearApError();
+        if (apStep > 1) apStep -= 1;
+        renderApStep();
+    }
+
+    function selectPayMethod(method) {
+        apPayMethod = method;
+        document.querySelectorAll('.ap-radio-card').forEach(el => {
+            el.classList.toggle('selected', el.dataset.pay === method);
+        });
+        syncApButtons();
+    }
+
+    function canSubmitAppointment() {
+        // 필수 체크( data-required=true )만 검사
+        const required = apChecks.filter(c => c.dataset.required === 'true');
+        return required.every(c => c.checked);
+    }
+
+    function syncApButtons() {
+        if (apStep === 1) {
+            apNextBtn.disabled = !apDatetime.value;
+            apDatetime.oninput = () => syncApButtons();
+            return;
+        }
+        if (apStep === 2) {
+            apNextBtn.disabled = !apPayMethod;
+            return;
+        }
+        if (apStep === 3) {
+            apNextBtn.disabled = !canSubmitAppointment();
+            return;
+        }
+    }
+
+    function buildSummaryHtml() {
+        const dt = apDatetime.value; // "YYYY-MM-DDTHH:mm"
+        const nice = dt ? dt.replace('T', ' ') : '-';
+        const pay =
+            apPayMethod === 'CARD' ? '카드 결제' :
+                apPayMethod === 'TRANSFER' ? '계좌이체' :
+                    apPayMethod === 'ONSITE' ? '현장 결제' : '-';
+
+        return `
+          <div class="ap-mini">
+            선택한 예약: <strong>${nice}</strong><br>
+            결제 방식: <strong>${pay}</strong>
+          </div>
+        `;
+    }
+
+    async function submitAppointmentRequest() {
+        // 백엔드 DTO에 맞춰 3개만 전송
+        // datetime-local은 초가 없으니 ":00" 붙여 LocalDateTime 형태로 맞춤
+        const requestTime = apDatetime.value ? `${apDatetime.value}:00` : null;
+
+        apNextBtn.disabled = true;
+        apNextBtn.textContent = '요청 중...';
+
+        try {
+            const res = await fetch('/appointment/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    requester_id: currentUid,
+                    businessProfile_id: opponentBusinessProfileId,
+                    requestTime: requestTime
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error('예약 요청 실패');
+            }
+
+            // 응답은 AppointmentDTO 예상
+            await res.json();
+
+            closeAppointmentModal();
+            alert('예약 요청을 보냈습니다.');
+        } catch (e) {
+            showApError('예약 요청 중 오류가 발생했습니다.');
+        } finally {
+            apNextBtn.disabled = false;
+            apNextBtn.textContent = '예약 요청';
+            syncApButtons();
+        }
     }
 </script>
 

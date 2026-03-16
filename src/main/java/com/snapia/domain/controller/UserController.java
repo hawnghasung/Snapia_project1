@@ -84,15 +84,17 @@ public class UserController {
 
     // 프로필 수정 처리
     @PostMapping("/profile/update")
-    public String updatePost(ProfileDTO profileDTO, @AuthenticationPrincipal PrincipalDetails principalDetails) {
+    public String updatePost(ProfileDTO profileDTO, BusinessProfileDTO businessProfileDTO, @AuthenticationPrincipal PrincipalDetails principalDetails) {
         if (principalDetails == null) return "redirect:/login";
 
-        userService.profileUpdate(profileDTO, principalDetails.getUsers().getUid());
-        principalDetails.getUsers().setSnapiaId(profileDTO.getSnapiaId());
-        principalDetails.getUsers().setName(profileDTO.getName());
-        principalDetails.getUsers().setBio(profileDTO.getBio());
-        principalDetails.getUsers().setEmail(profileDTO.getEmail());
-        principalDetails.getUsers().setProfileImageUrl(profileDTO.getProfileImageUrl());
+        Long uid = principalDetails.getUsers().getUid();
+        ProfileDTO updatedUser = userService.profileUpdate(profileDTO, businessProfileDTO, uid);
+
+        principalDetails.getUsers().setSnapiaId(updatedUser.getSnapiaId());
+        principalDetails.getUsers().setName(updatedUser.getName());
+        principalDetails.getUsers().setBio(updatedUser.getBio());
+        principalDetails.getUsers().setEmail(updatedUser.getEmail());
+        principalDetails.getUsers().setProfileImageUrl(updatedUser.getProfileImageUrl());
 
         return "redirect:/profile";
     }
@@ -102,12 +104,17 @@ public class UserController {
     public String userProfile(@PathVariable String snapiaId,
                               @AuthenticationPrincipal PrincipalDetails principalDetails,
                               Model model) {
+
+
+
         Users user = userService.findBySnapiaId(snapiaId);
-        boolean isMyProfile = principalDetails.getUsers().getUid().equals(user.getUid());
+        boolean isMyProfile = principalDetails != null && principalDetails.getUsers().getUid().equals(user.getUid());
+
+
 
         List<ProfilePostDTO> posts = userService.getProfilePosts(user.getUid());
 
-        if (!isMyProfile) {
+        if (!isMyProfile && principalDetails != null) {
             boolean isFollowing = followService.isFollowing(
                     principalDetails.getUsers().getUid(), user.getUid());
             model.addAttribute("isFollowing", isFollowing);
