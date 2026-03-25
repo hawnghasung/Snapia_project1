@@ -19,7 +19,7 @@ public class Suggest extends BaseTimeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long suid;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "appointment_id")
     private Appointment appointment;
 

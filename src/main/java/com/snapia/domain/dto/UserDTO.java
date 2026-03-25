@@ -33,7 +33,7 @@ public class UserDTO {
 
     private String profileImageUrl;
 
-    private boolean isBusiness;
+    private boolean business;
 
     private Gender gender;
 

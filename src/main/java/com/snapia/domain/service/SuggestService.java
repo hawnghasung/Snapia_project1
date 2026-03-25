@@ -40,59 +40,52 @@ public class SuggestService {
                 appointment.getRequester().getUid(), BusinessNotificationType.APPOINTMENT);
 
         return SuggestDTO.builder()
-                .appointmentId(suggestDTO.getAppointmentId())
+                .appointmentId(appointment.getAid())
                 .suid(suggest.getSuid())
                 .suggestStatus(suggest.getSuggestStatus())
                 .suggestTime(suggest.getSuggestTime())
                 .build();
     }
 
-    public SuggestDTO acceptSuggest(Long suggestId) {
-        Suggest suggest = suggestRepository.findById(suggestId)
+    public SuggestDTO acceptSuggest(Long suid) {
+        Suggest suggest = suggestRepository.findById(suid)
                 .orElseThrow(() -> new IllegalArgumentException("오류"));
 
         suggest.setSuggestStatus(SuggestStatus.ACCEPT);
 
-        Appointment appointment = appointmentRepository.findById(suggest.getAppointment().getAid())
-                .orElseThrow(()->new IllegalArgumentException("오류"));
-
+        Appointment appointment = suggest.getAppointment();
         appointment.setAppointmentStatus(AppointmentStatus.ACCEPT);
 
-        notificationService.send(appointment.getRequester().getUid(), appointment.getBusinessProfile().getUsers().getUid(),
-                BusinessNotificationType.APPOINTMENT);
+        notificationService.send(appointment.getRequester().getUid(),
+                appointment.getBusinessProfile().getUsers().getUid(), BusinessNotificationType.APPOINTMENT);
 
         return SuggestDTO.builder()
-                .appointmentId(suggest.getAppointment().getAid())
+                .appointmentId(appointment.getAid())
                 .suid(suggest.getSuid())
                 .suggestStatus(suggest.getSuggestStatus())
                 .suggestTime(suggest.getSuggestTime())
                 .build();
     }
 
-    public SuggestDTO rejectSuggest(Long suggestId, String rejectReason) {
-        Suggest suggest = suggestRepository.findById(suggestId)
+    public SuggestDTO rejectSuggest(Long suid, String rejectReason) {
+        Suggest suggest = suggestRepository.findById(suid)
                 .orElseThrow(() -> new IllegalArgumentException("오류"));
 
         suggest.setSuggestStatus(SuggestStatus.DECLINE);
         suggest.setRejectReason(rejectReason);
 
-        Appointment appointment = appointmentRepository.findById(suggest.getAppointment().getAid())
-                .orElseThrow(()->new IllegalArgumentException("오류"));
-
+        Appointment appointment = suggest.getAppointment();
         appointment.setAppointmentStatus(AppointmentStatus.DECLINE);
 
-        notificationService.send(appointment.getRequester().getUid(), appointment.getBusinessProfile().getUsers().getUid(),
-                BusinessNotificationType.APPOINTMENT);
+        notificationService.send(appointment.getRequester().getUid(),
+                appointment.getBusinessProfile().getUsers().getUid(), BusinessNotificationType.APPOINTMENT);
 
         return SuggestDTO.builder()
-                .appointmentId(suggest.getAppointment().getAid())
+                .appointmentId(appointment.getAid())
                 .suid(suggest.getSuid())
                 .suggestStatus(suggest.getSuggestStatus())
                 .suggestTime(suggest.getSuggestTime())
                 .rejectReason(suggest.getRejectReason())
                 .build();
-
     }
-
-
 }

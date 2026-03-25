@@ -14,6 +14,9 @@ public interface UserRepository extends JpaRepository<Users, Long> {
     Optional<Users> findByLoginIdentifier(@Param("loginId") String loginId);
 
     boolean existsBySnapiaId(String snapiaId);
+    boolean existsByPhoneNum(String phoneNum);  // 추가
+    boolean existsByEmail(String email);        // 이메일도 추가 권장
+
     List<Users> findTop10ByUidNotInOrderByUidDesc(List<Long> excludeIds);
 
     Optional<Object> findBySnapiaId(String snapiaId);

@@ -1,102 +1,140 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>팔로우 요청</title>
-    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>팔로우 요청 - Snapia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #fafafa; }
-        .container { max-width: 600px; margin: 0 auto; padding: 30px 20px; }
-        .header { background-color: #fff; border: 1px solid #dbdbdb; border-radius: 8px; padding: 20px; margin-bottom: 20px; }
-        .header h1 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
-        .header p { font-size: 14px; color: #8e8e8e; }
-        .requests-list { background-color: #fff; border: 1px solid #dbdbdb; border-radius: 8px; }
-        .request-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #efefef; }
+        *, *::before, *::after { box-sizing: border-box; }
+        body {
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #fafafa;
+        }
+        .page-wrap { max-width: 480px; margin: 80px auto 40px; padding: 0 16px; }
+        .card { background: #fff; border: 1px solid #dbdbdb; border-radius: 4px; overflow: hidden; }
+        .card-header {
+            padding: 14px 16px; border-bottom: 1px solid #efefef;
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .card-title { font-size: 15px; font-weight: 700; color: #262626; }
+        .card-subtitle { font-size: 12px; color: #8e8e8e; text-align: center; padding: 10px 16px 0; }
+        .card-back {
+            position: absolute; left: 14px; font-size: 20px;
+            cursor: pointer; color: #262626; text-decoration: none; line-height: 1;
+        }
+        .card-back:hover { opacity: 0.6; }
+
+        .request-item {
+            display: flex; align-items: center; padding: 12px 16px; gap: 12px;
+            border-bottom: 1px solid #f5f5f5; transition: background 0.1s;
+        }
         .request-item:last-child { border-bottom: none; }
-        .request-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; border: 1px solid #dbdbdb; }
-        .request-info { flex: 1; }
-        .request-username { font-size: 14px; font-weight: 600; color: #000; text-decoration: none; display: block; margin-bottom: 4px; }
+        .request-item:hover { background: #fafafa; }
+
+        .request-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 1px solid #dbdbdb; flex-shrink: 0; }
+        .request-info { flex: 1; min-width: 0; }
+        .request-username {
+            font-size: 14px; font-weight: 700; color: #262626;
+            text-decoration: none; display: block;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
         .request-username:hover { text-decoration: underline; }
-        .request-message { font-size: 12px; color: #8e8e8e; }
-        .request-actions { display: flex; gap: 8px; }
-        .btn { padding: 7px 16px; font-size: 14px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; }
-        .btn-accept { background-color: #0095f6; color: #fff; }
-        .btn-accept:hover { background-color: #1877f2; }
-        .btn-decline { background-color: #efefef; color: #000; }
-        .btn-decline:hover { background-color: #dbdbdb; }
-        .no-requests { text-align: center; padding: 60px 20px; background-color: #fff; border: 1px solid #dbdbdb; border-radius: 8px; }
-        .no-requests-icon { font-size: 48px; margin-bottom: 16px; }
-        .no-requests h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
-        .no-requests p { font-size: 14px; color: #8e8e8e; }
+        .request-msg { font-size: 12px; color: #8e8e8e; margin-top: 2px; }
+
+        .request-actions { display: flex; gap: 6px; flex-shrink: 0; }
+        .btn-accept {
+            padding: 6px 14px; background: #0095f6; color: #fff;
+            border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+            font-family: 'Instrument Sans', sans-serif; cursor: pointer; transition: opacity 0.15s;
+        }
+        .btn-accept:hover { opacity: 0.85; }
+        .btn-decline {
+            padding: 6px 14px; background: #efefef; color: #262626;
+            border: none; border-radius: 8px; font-size: 13px; font-weight: 700;
+            font-family: 'Instrument Sans', sans-serif; cursor: pointer; transition: background 0.15s;
+        }
+        .btn-decline:hover { background: #dbdbdb; }
+
+        .empty-state { text-align: center; padding: 48px 20px; color: #8e8e8e; font-size: 14px; }
+        .empty-icon { font-size: 40px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header">
-        <h1>팔로우 요청</h1>
-        <p>회원님을 팔로우하려는 요청</p>
-    </div>
+<th:block th:replace="~{fragments/header :: header}"></th:block>
 
-    <div th:if="${requests != null and !#lists.isEmpty(requests)}" class="requests-list">
-        <div class="request-item" th:each="request : ${requests}" th:data-user-id="${request.userId}">
-            <img th:if="${request.profileImgUrl != null}" th:src="@{'/upload/' + ${request.profileImgUrl}}" class="request-avatar" alt="프로필">
-            <img th:unless="${request.profileImgUrl != null}" src="/images/default_profile.png" class="request-avatar" alt="기본 프로필">
-            <div class="request-info">
-                <a th:href="@{/profile/{snapiaId}(snapiaId=${request.snapiaId})}" class="request-username" th:text="${request.snapiaId}">username</a>
-                <div class="request-message">회원님을 팔로우하려고 합니다</div>
-            </div>
-            <div class="request-actions">
-                <button class="btn btn-accept" th:onclick="acceptRequest([[${request.userId}]])">수락</button>
-                <button class="btn btn-decline" th:onclick="declineRequest([[${request.userId}]])">삭제</button>
+<div class="page-wrap">
+    <div class="card">
+        <div class="card-header">
+            <a onclick="history.back()" class="card-back">←</a>
+            <span class="card-title">팔로우 요청</span>
+        </div>
+
+        <div th:if="${requests != null and !#lists.isEmpty(requests)}">
+            <p class="card-subtitle">회원님의 계정이 비공개입니다. 아래 요청을 수락하거나 거절하세요.</p>
+            <div class="request-item"
+                 th:each="request : ${requests}"
+                 th:data-user-id="${request.userId}">
+                <img th:src="${request.profileImgUrl != null} ? '/upload/' + ${request.profileImgUrl} : '/images/default_profile.png'"
+                     class="request-avatar" alt="프로필"
+                     onerror="this.src='/images/default_profile.png'">
+                <div class="request-info">
+                    <a th:href="@{/profile/{id}(id=${request.snapiaId})}"
+                       class="request-username" th:text="${request.snapiaId}">username</a>
+                    <div class="request-msg">회원님을 팔로우하려고 합니다</div>
+                </div>
+                <div class="request-actions">
+                    <button class="btn-accept" th:onclick="'acceptRequest(' + ${request.userId} + ')'">수락</button>
+                    <button class="btn-decline" th:onclick="'declineRequest(' + ${request.userId} + ')'">삭제</button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="no-requests" th:if="${requests == null or #lists.isEmpty(requests)}">
-        <div class="no-requests-icon">👥</div>
-        <h2>팔로우 요청 없음</h2>
-        <p>회원님을 팔로우하려는 요청이 없습니다</p>
+        <div th:if="${requests == null or #lists.isEmpty(requests)}" class="empty-state">
+            <div class="empty-icon">👥</div>
+            <p>팔로우 요청이 없습니다</p>
+        </div>
     </div>
 </div>
 
 <script>
+    function removeItem(userId) {
+        const item = document.querySelector(`[data-user-id="${userId}"]`);
+        if (!item) return;
+        item.style.transition = 'opacity 0.25s';
+        item.style.opacity = '0';
+        setTimeout(() => {
+            item.remove();
+            if (!document.querySelectorAll('.request-item').length) location.reload();
+        }, 250);
+    }
+
     function acceptRequest(userId) {
         fetch(`/follow/${userId}/accept`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
-                if (data.success) {
-                    const item = document.querySelector(`[data-user-id="${userId}"]`);
-                    if (item) {
-                        item.style.transition = 'opacity 0.3s';
-                        item.style.opacity = '0';
-                        setTimeout(() => { item.remove(); if (!document.querySelectorAll('.request-item').length) location.reload(); }, 300);
-                    }
-                } else { alert(data.message); }
+                if (data.success) removeItem(userId);
+                else alert(data.message);
             })
-            .catch(error => { console.error('Error:', error); alert('오류가 발생했습니다.'); });
+            .catch(() => alert('오류가 발생했습니다.'));
     }
 
     function declineRequest(userId) {
         if (!confirm('이 요청을 삭제하시겠습니까?')) return;
         fetch(`/follow/${userId}/decline`, { method: 'POST', headers: { 'Content-Type': 'application/json' } })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
-                if (data.success) {
-                    const item = document.querySelector(`[data-user-id="${userId}"]`);
-                    if (item) {
-                        item.style.transition = 'opacity 0.3s';
-                        item.style.opacity = '0';
-                        setTimeout(() => { item.remove(); if (!document.querySelectorAll('.request-item').length) location.reload(); }, 300);
-                    }
-                } else { alert(data.message); }
+                if (data.success) removeItem(userId);
+                else alert(data.message);
             })
-            .catch(error => { console.error('Error:', error); alert('오류가 발생했습니다.'); });
+            .catch(() => alert('오류가 발생했습니다.'));
     }
 </script>
-
 <th:block th:replace="~{fragments/header :: headerScript}"></th:block>
 </body>
 </html>

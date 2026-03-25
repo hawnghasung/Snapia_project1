@@ -35,6 +35,10 @@ public class UserService {
     private final BusinessProfileRepository businessProfileRepository;
 
     public void signUp(UserDTO userDTO, BusinessProfileDTO businessProfileDTO) {
+        if (userRepository.existsByPhoneNum(userDTO.getPhoneNum())) {
+            throw new IllegalArgumentException("오류");
+        }
+
         Users users = Users.builder()
                 .snapiaId(userDTO.getSnapiaId())
                 .email(userDTO.getEmail())
@@ -47,6 +51,8 @@ public class UserService {
                 .profileImageUrl(userDTO.getProfileImageUrl())
                 .pubOrNot(userDTO.getPubOrNot())
                 .build();
+
+
 
 
         userRepository.save(users);

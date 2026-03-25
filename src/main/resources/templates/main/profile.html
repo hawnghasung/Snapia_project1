@@ -84,6 +84,20 @@
         .highlight-submit-btn:hover { background: #1877f2; }
         .highlight-submit-btn:disabled { background: #b2dffc; cursor: not-allowed; }
 
+        /* 비즈니스 인증 배지 */
+        .verified-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            background: #0095f6;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-left: 2px;
+        }
+        .verified-badge svg { display: block; }
+
         /* 하이라이트 컨텍스트 메뉴 */
         .highlight-context-menu { display: none; position: fixed; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 99999; min-width: 160px; overflow: hidden; }
         .highlight-context-menu.open { display: block; }
@@ -128,7 +142,15 @@
 
         <div class="flex-1">
             <div class="flex items-center gap-5 mb-5">
-                <h1 class="text-xl font-light" th:text="${user?.snapiaId}">username</h1>
+                <span class="flex items-center gap-1.5">
+                    <h1 class="text-xl font-light" th:text="${user?.snapiaId}">username</h1>
+                    <!-- 비즈니스 계정 파란 체크 뱃지 -->
+                    <span th:if="${user?.business}" class="verified-badge" title="비즈니스 계정">
+                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M2 5.5L4.5 8L9 3" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </span>
+                </span>
                 <div sec:authorize="isAuthenticated()" th:if="${isMyProfile == null or isMyProfile == true}" class="flex gap-2">
                     <a href="/profile/update" class="px-4 py-1.5 text-sm font-semibold bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">프로필 편집</a>
                     <button class="px-4 py-1.5 text-sm font-semibold bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">프로필 공유</button>

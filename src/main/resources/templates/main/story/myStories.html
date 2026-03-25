@@ -1,137 +1,326 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>스토리</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스토리 - Snapia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #000; overflow: hidden; }
-        .story-viewer { position: relative; width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .story-container { position: relative; max-width: 500px; width: 100%; height: 100vh; background-color: #000; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #000;
+            overflow: hidden;
+        }
+
+        .story-viewer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 블러 배경 */
+        .bg-blur {
+            position: fixed; inset: 0;
+            background-size: cover; background-position: center;
+            filter: blur(40px) brightness(0.25) saturate(1.4);
+            transform: scale(1.1); z-index: 0;
+            transition: background-image 0.3s ease;
+        }
+
+        .story-container {
+            position: relative;
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            background: #111;
+            z-index: 1;
+            overflow: hidden;
+        }
 
         /* 진행바 */
-        .progress-bars { position: absolute; top: 8px; left: 8px; right: 8px; display: flex; gap: 4px; z-index: 10; }
-        .progress-bar { flex: 1; height: 2px; background-color: rgba(255, 255, 255, 0.3); border-radius: 1px; overflow: hidden; }
-        .progress-fill { height: 100%; background-color: #fff; width: 0%; transition: width 0.1s linear; }
+        .progress-bars {
+            position: absolute; top: 10px; left: 10px; right: 10px;
+            display: flex; gap: 4px; z-index: 10;
+        }
+        .progress-bar {
+            flex: 1; height: 2.5px;
+            background: rgba(255,255,255,0.3); border-radius: 99px; overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%; background: #fff; width: 0%;
+            transition: width 0.1s linear; border-radius: 99px;
+        }
+        .progress-fill.done { width: 100%; }
 
         /* 헤더 */
-        .story-header { position: absolute; top: 20px; left: 16px; right: 16px; display: flex; align-items: center; justify-content: space-between; z-index: 10; }
-        .user-info { display: flex; align-items: center; }
-        .user-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; margin-right: 8px; border: 2px solid #fff; }
-        .user-name { color: #fff; font-size: 14px; font-weight: 600; }
-        .story-time { color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-left: 8px; }
-        .close-btn { color: #fff; font-size: 28px; cursor: pointer; background: none; border: none; }
+        .story-header {
+            position: absolute; top: 26px; left: 12px; right: 12px;
+            display: flex; align-items: center; justify-content: space-between; z-index: 10;
+        }
+        .user-info { display: flex; align-items: center; gap: 8px; }
+        .user-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            object-fit: cover; border: 2px solid rgba(255,255,255,0.8);
+        }
+        .user-name { color: #fff; font-size: 14px; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,0.5); }
+        .story-time { color: rgba(255,255,255,0.6); font-size: 12px; margin-left: 4px; }
 
-        /* 스토리 이미지 */
-        .story-image { width: 100%; height: 100%; object-fit: contain; }
+        .close-btn {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(0,0,0,0.35); backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.12);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #fff; font-size: 16px;
+            transition: background 0.2s;
+        }
+        .close-btn:hover { background: rgba(0,0,0,0.6); }
 
-        /* 네비게이션 */
-        .story-nav { position: absolute; top: 0; bottom: 0; width: 50%; cursor: pointer; z-index: 5; }
-        .story-nav.prev { left: 0; }
-        .story-nav.next { right: 0; }
+        /* 스토리 미디어 */
+        .story-media {
+            width: 100%; height: 100%;
+            object-fit: cover; display: block;
+        }
 
-        /* 하단 입력 */
-        .story-footer { position: absolute; bottom: 20px; left: 16px; right: 16px; z-index: 10; }
-        .reply-input { width: 100%; padding: 12px 16px; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 24px; background-color: transparent; color: #fff; outline: none; }
-        .reply-input::placeholder { color: rgba(255, 255, 255, 0.6); }
+        /* 하단 그라디언트 */
+        .bottom-grad {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 180px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.65));
+            pointer-events: none; z-index: 6;
+        }
+
+        /* 네비게이션 터치존 */
+        .nav-zone {
+            position: absolute; top: 0; height: 100%; width: 35%; z-index: 5; cursor: pointer;
+        }
+        .nav-left { left: 0; }
+        .nav-right { right: 0; }
+
+        /* 답장 입력 */
+        .reply-area {
+            position: absolute; bottom: 20px; left: 12px; right: 12px;
+            display: flex; align-items: center; gap: 10px; z-index: 10;
+        }
+        .reply-input {
+            flex: 1; padding: 10px 16px;
+            border: 1.5px solid rgba(255,255,255,0.4); border-radius: 24px;
+            background: transparent; color: #fff; font-size: 14px;
+            font-family: 'Instrument Sans', sans-serif; outline: none;
+            transition: border-color 0.2s;
+        }
+        .reply-input::placeholder { color: rgba(255,255,255,0.55); }
+        .reply-input:focus { border-color: rgba(255,255,255,0.8); }
+
+        /* 빈 상태 */
+        .empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; gap: 16px; color: rgba(255,255,255,0.7);
+        }
+        .empty-state .icon { font-size: 48px; }
+        .empty-state p { font-size: 14px; }
+        .empty-back {
+            margin-top: 8px; padding: 10px 24px;
+            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px; color: #fff; font-size: 14px; font-weight: 600;
+            cursor: pointer; font-family: 'Instrument Sans', sans-serif;
+            transition: background 0.2s;
+        }
+        .empty-back:hover { background: rgba(255,255,255,0.25); }
     </style>
 </head>
 <body>
+
 <div class="story-viewer">
-    <div class="story-container">
+    <div class="bg-blur" id="bgBlur"></div>
+
+    <div class="story-container" id="storyContainer">
+
         <!-- 진행바 -->
-        <div class="progress-bars">
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
-            </div>
-        </div>
+        <div class="progress-bars" id="progressBars"></div>
 
         <!-- 헤더 -->
         <div class="story-header">
             <div class="user-info">
-                <img src="/images/default_profile.png" class="user-avatar" alt="프로필" id="userAvatar">
-                <span class="user-name" id="userName">username</span>
-                <span class="story-time" id="storyTime">5시간 전</span>
+                <img id="userAvatar" src="/images/default_profile.png" class="user-avatar" alt="프로필">
+                <span id="userName" class="user-name">username</span>
+                <span id="storyTime" class="story-time"></span>
             </div>
-            <button class="close-btn" onclick="closeStory()">×</button>
+            <div class="close-btn" onclick="closeStory()">✕</div>
         </div>
 
-        <!-- 스토리 이미지 -->
-        <img src="" class="story-image" alt="스토리" id="storyImage">
+        <!-- 미디어 -->
+        <img id="storyImage" class="story-media" src="" alt="스토리" style="display:none;">
+        <video id="storyVideo" class="story-media" playsinline style="display:none;"></video>
 
         <!-- 네비게이션 -->
-        <div class="story-nav prev" onclick="previousStory()"></div>
-        <div class="story-nav next" onclick="nextStory()"></div>
+        <div class="nav-zone nav-left" onclick="prevStory()"></div>
+        <div class="nav-zone nav-right" onclick="nextStory()"></div>
 
-        <!-- 하단 입력 -->
-        <div class="story-footer">
-            <input type="text" class="reply-input" placeholder="메시지 보내기..." id="replyInput">
+        <!-- 하단 -->
+        <div class="bottom-grad"></div>
+        <div class="reply-area">
+            <input type="text" class="reply-input" id="replyInput"
+                   placeholder="메시지 보내기..."
+                   onkeydown="if(event.key==='Enter') sendReply()">
+        </div>
+
+        <!-- 빈 상태 -->
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <div class="icon">📷</div>
+            <p>스토리를 찾을 수 없습니다</p>
+            <button class="empty-back" onclick="closeStory()">돌아가기</button>
         </div>
     </div>
 </div>
 
 <script th:inline="javascript">
     const storyId = [[${storyId}]];
-    let currentProgress = 0;
-    let progressInterval;
-    const STORY_DURATION = 5000; // 5초
+    const STORY_DURATION = 5000;
 
-    // 페이지 로드 시 스토리 데이터 로드
-    window.addEventListener('DOMContentLoaded', function() {
-        loadStoryData();
-        startProgress();
-    });
+    let stories = [];
+    let storyIndex = 0;
+    let progressInterval = null;
+    let progress = 0;
+    let isPaused = false;
 
-    function loadStoryData() {
-        // TODO: API로 스토리 데이터 가져오기
-        // 임시 데이터
-        document.getElementById('storyImage').src = '/upload/story_image.jpg';
-        document.getElementById('userName').textContent = 'user123';
-        document.getElementById('storyTime').textContent = '2시간 전';
+    window.addEventListener('DOMContentLoaded', loadStories);
+
+    async function loadStories() {
+        try {
+            // 단일 스토리 or 유저 스토리 목록 로드
+            const res = await fetch(`/story/viewer/${storyId}`);
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            stories = Array.isArray(data) ? data : [data];
+            storyIndex = 0;
+            renderProgressBars();
+            showStory();
+        } catch {
+            document.getElementById('emptyState').style.display = 'flex';
+        }
     }
 
-    function startProgress() {
-        const progressFill = document.getElementById('progressFill');
-        const increment = 100 / (STORY_DURATION / 50);
-
-        progressInterval = setInterval(() => {
-            currentProgress += increment;
-            progressFill.style.width = currentProgress + '%';
-
-            if (currentProgress >= 100) {
-                nextStory();
-            }
-        }, 50);
+    function renderProgressBars() {
+        const bars = document.getElementById('progressBars');
+        bars.innerHTML = stories.map((_, i) => `
+            <div class="progress-bar">
+                <div class="progress-fill ${i < storyIndex ? 'done' : ''}" id="fill-${i}"></div>
+            </div>
+        `).join('');
     }
 
-    function pauseProgress() {
+    function showStory() {
         clearInterval(progressInterval);
+        progress = 0;
+
+        const story = stories[storyIndex];
+        if (!story) { closeStory(); return; }
+
+        const img   = document.getElementById('storyImage');
+        const video = document.getElementById('storyVideo');
+        const bg    = document.getElementById('bgBlur');
+
+        // 배경 블러
+        const mediaSrc = story.storyImgUrl ? `/upload/${story.storyImgUrl}` : '';
+        bg.style.backgroundImage = mediaSrc ? `url('${mediaSrc}')` : 'none';
+
+        // 프로필 정보
+        document.getElementById('userAvatar').src =
+            story.profileImageUrl ? `/upload/${story.profileImageUrl}` : '/images/default_profile.png';
+        document.getElementById('userName').textContent = story.snapiaId || '';
+        document.getElementById('storyTime').textContent = getTimeAgo(story.createdAt);
+
+        if (story.mediaType === 'VIDEO' && story.storyImgUrl) {
+            img.style.display = 'none';
+            video.src = `/upload/${story.storyImgUrl}`;
+            video.style.display = 'block';
+            video.play().catch(() => {});
+            video.onloadedmetadata = () => startProgressBar(video.duration * 1000);
+        } else {
+            video.pause(); video.style.display = 'none';
+            img.src = mediaSrc || '/images/default_profile.png';
+            img.style.display = 'block';
+            startProgressBar(STORY_DURATION);
+        }
     }
 
-    function resumeProgress() {
-        startProgress();
+    function startProgressBar(duration) {
+        const fill = document.getElementById(`fill-${storyIndex}`);
+        progressInterval = setInterval(() => {
+            if (isPaused) return;
+            progress += 100 / (duration / 100);
+            if (fill) fill.style.width = Math.min(progress, 100) + '%';
+            if (progress >= 100) nextStory();
+        }, 100);
     }
 
-    function previousStory() {
-        // TODO: 이전 스토리로 이동
-        console.log('이전 스토리');
+    function prevStory() {
+        clearInterval(progressInterval);
+        document.getElementById('storyVideo').pause();
+        if (storyIndex > 0) { storyIndex--; renderProgressBars(); showStory(); }
     }
 
     function nextStory() {
-        // TODO: 다음 스토리로 이동 또는 닫기
-        console.log('다음 스토리');
-        closeStory();
+        clearInterval(progressInterval);
+        document.getElementById('storyVideo').pause();
+        if (storyIndex < stories.length - 1) { storyIndex++; renderProgressBars(); showStory(); }
+        else closeStory();
     }
 
     function closeStory() {
-        window.history.back();
+        clearInterval(progressInterval);
+        document.getElementById('storyVideo').pause();
+        history.back();
     }
 
-    // 마우스 누르고 있으면 일시정지
-    document.querySelector('.story-container').addEventListener('mousedown', pauseProgress);
-    document.querySelector('.story-container').addEventListener('mouseup', resumeProgress);
-    document.querySelector('.story-container').addEventListener('mouseleave', resumeProgress);
+    function sendReply() {
+        const input = document.getElementById('replyInput');
+        const content = input.value.trim();
+        if (!content || !stories[storyIndex]) return;
+        const story = stories[storyIndex];
+        // DM 방 생성 후 메시지 전송
+        fetch('/room/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ receiverId: story.userId })
+        }).then(r => r.json()).then(room => {
+            return fetch('/dm/send/story-reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ roid: room.roid, content, replyStorySid: story.sid })
+            });
+        }).then(() => { input.value = ''; }).catch(() => {});
+    }
+
+    function getTimeAgo(createdAt) {
+        if (!createdAt) return '';
+        const diff = Date.now() - new Date(createdAt).getTime();
+        const min = Math.floor(diff / 60000);
+        if (min < 1) return '방금 전';
+        if (min < 60) return `${min}분 전`;
+        const hr = Math.floor(min / 60);
+        if (hr < 24) return `${hr}시간 전`;
+        return `${Math.floor(hr / 24)}일 전`;
+    }
+
+    // 꾹 누르면 일시정지
+    const container = document.getElementById('storyContainer');
+    container.addEventListener('mousedown', e => {
+        if (!e.target.closest('.reply-area') && !e.target.closest('.close-btn')) isPaused = true;
+    });
+    container.addEventListener('mouseup', () => isPaused = false);
+    container.addEventListener('mouseleave', () => isPaused = false);
+    container.addEventListener('touchstart', e => {
+        if (!e.target.closest('.reply-area') && !e.target.closest('.close-btn')) isPaused = true;
+    }, { passive: true });
+    container.addEventListener('touchend', () => isPaused = false);
 </script>
 </body>
 </html>

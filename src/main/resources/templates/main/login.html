@@ -1,24 +1,162 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
-    <title>로그인</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>로그인 - Snapia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-wrap {
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .auth-card {
+            background: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 4px;
+            padding: 40px 40px 24px;
+            margin-bottom: 10px;
+        }
+
+        .auth-logo {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .auth-logo span {
+            font-size: 36px;
+            font-weight: 700;
+            letter-spacing: -1.5px;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 9px 10px;
+            background: #fafafa;
+            border: 1px solid #dbdbdb;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Instrument Sans', sans-serif;
+            color: #262626;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .auth-input:focus { border-color: #a8a8a8; background: #fff; }
+        .auth-input::placeholder { color: #aaa; }
+
+        .auth-btn {
+            width: 100%;
+            padding: 8px;
+            background: #0095f6;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 700;
+            font-family: 'Instrument Sans', sans-serif;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            margin-top: 6px;
+        }
+        .auth-btn:hover { opacity: 0.85; }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 16px 0;
+        }
+        .auth-divider::before, .auth-divider::after {
+            content: ''; flex: 1; height: 1px; background: #dbdbdb;
+        }
+        .auth-divider span { font-size: 13px; font-weight: 700; color: #8e8e8e; }
+
+        .auth-error {
+            background: rgba(237, 73, 86, 0.08);
+            border: 1px solid rgba(237, 73, 86, 0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #ed4956;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 4px;
+        }
+
+        .auth-forgot { text-align: center; margin-top: 12px; }
+        .auth-forgot a {
+            font-size: 12px;
+            color: #00376b;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .auth-forgot a:hover { text-decoration: underline; }
+
+        .auth-bottom {
+            background: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            font-size: 14px;
+            color: #262626;
+        }
+        .auth-bottom a { color: #0095f6; font-weight: 700; text-decoration: none; }
+        .auth-bottom a:hover { text-decoration: underline; }
+    </style>
 </head>
 <body>
-<h2>로그인</h2>
-<form th:action="@{/login}" method="post">
-    <div>
-        <label>아이디/이메일/번호:</label>
-        <input type="text" name="loginId" placeholder="이메일, 전화번호 또는 아이디" required>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-logo"><span>Snapia</span></div>
+
+        <form th:action="@{/login}" method="post" class="auth-form">
+            <input type="text" name="loginId" class="auth-input"
+                   placeholder="아이디, 이메일 또는 전화번호" required autocomplete="username">
+            <input type="password" name="password" class="auth-input"
+                   placeholder="비밀번호" required autocomplete="current-password">
+            <button type="submit" class="auth-btn">로그인</button>
+
+            <div th:if="${param.error}" class="auth-error">
+                아이디나 비밀번호가 올바르지 않습니다.
+            </div>
+        </form>
+
+        <div class="auth-divider"><span>또는</span></div>
+
+        <div class="auth-forgot">
+            <a href="/forgot-password">비밀번호를 잊으셨나요?</a>
+        </div>
     </div>
-    <div>
-        <label>비밀번호:</label>
-        <input type="password" name="password" required>
+
+    <div class="auth-bottom">
+        계정이 없으신가요? <a th:href="@{/join}">가입하기</a>
     </div>
-    <div th:if="${param.error}">
-        로그인 정보가 올바르지 않습니다.
-    </div>
-    <button type="submit">로그인</button>
-</form>
-<p>계정이 없으신가요? <a th:href="@{/join}">회원가입</a></p>
+</div>
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
 </body>
 </html>

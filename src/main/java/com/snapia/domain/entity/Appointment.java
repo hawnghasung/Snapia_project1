@@ -40,4 +40,7 @@ public class Appointment extends BaseTimeEntity {
 
     private String rejectReason;
 
+    @OneToOne(mappedBy = "appointment", fetch = FetchType.LAZY)
+    private Suggest suggest;
+
 }

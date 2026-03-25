@@ -34,12 +34,17 @@ public class UserController {
     }
 
     @PostMapping("/join")
-    public String signUpPost(@Valid UserDTO userDTO, BusinessProfileDTO businessProfileDTO, BindingResult bindingResult) {
-        if (bindingResult.hasErrors()) {
-            log.info("회원 가입 실패 : " + bindingResult.hasErrors());
+    public String signUpPost(@Valid UserDTO userDTO, BusinessProfileDTO businessProfileDTO,
+                             BindingResult bindingResult, Model model) {
+        if (bindingResult.hasErrors()) return "main/join";
+
+        try {
+            userService.signUp(userDTO, businessProfileDTO);
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("errorMessage", e.getMessage());
             return "main/join";
         }
-        userService.signUp(userDTO, businessProfileDTO);
+
         return "redirect:/main";
     }
 
@@ -84,7 +89,8 @@ public class UserController {
 
     // 프로필 수정 처리
     @PostMapping("/profile/update")
-    public String updatePost(ProfileDTO profileDTO, BusinessProfileDTO businessProfileDTO, @AuthenticationPrincipal PrincipalDetails principalDetails) {
+    public String updatePost(ProfileDTO profileDTO, BusinessProfileDTO businessProfileDTO,
+                             @AuthenticationPrincipal PrincipalDetails principalDetails) {
         if (principalDetails == null) return "redirect:/login";
 
         Long uid = principalDetails.getUsers().getUid();
@@ -104,13 +110,8 @@ public class UserController {
     public String userProfile(@PathVariable String snapiaId,
                               @AuthenticationPrincipal PrincipalDetails principalDetails,
                               Model model) {
-
-
-
         Users user = userService.findBySnapiaId(snapiaId);
         boolean isMyProfile = principalDetails != null && principalDetails.getUsers().getUid().equals(user.getUid());
-
-
 
         List<ProfilePostDTO> posts = userService.getProfilePosts(user.getUid());
 
@@ -129,6 +130,21 @@ public class UserController {
         setStoryAttributes(model, user.getUid());
 
         return "main/profile";
+    }
+
+    // 예약 통합 페이지
+    @GetMapping("/appointment")
+    public String appointmentPage(Model model, @AuthenticationPrincipal PrincipalDetails principalDetails) {
+        if (principalDetails == null) return "redirect:/login";
+        Users user = principalDetails.getUsers();
+        model.addAttribute("currentUid", user.getUid());
+        model.addAttribute("isBusiness", user.isBusiness());
+        if (user.isBusiness() && user.getBusinessProfile() != null) {
+            model.addAttribute("bpid", user.getBusinessProfile().getBpid());
+        } else {
+            model.addAttribute("bpid", null);
+        }
+        return "main/appointment/appointment";
     }
 
     // 스토리 관련 model 세팅 공통 메서드

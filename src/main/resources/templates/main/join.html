@@ -1,35 +1,367 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="ko">
 <head>
-    <title>회원가입</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>회원가입 - Snapia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <th:block th:replace="~{fragments/header :: headerStyles}"></th:block>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Instrument Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .auth-wrap { width: 100%; max-width: 350px; }
+
+        .auth-card {
+            background: #fff;
+            border: 1px solid #dbdbdb;
+            border-radius: 4px;
+            padding: 32px 40px 24px;
+            margin-bottom: 10px;
+        }
+
+        .auth-logo { text-align: center; margin-bottom: 6px; }
+        .auth-logo span {
+            font-size: 36px; font-weight: 700; letter-spacing: -1.5px;
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        /* 스텝 인디케이터 */
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .step-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #dbdbdb;
+            transition: background 0.25s;
+        }
+        .step-dot.active { background: #0095f6; }
+        .step-dot.done { background: #262626; }
+
+        .step-label {
+            font-size: 12px;
+            color: #8e8e8e;
+            text-align: center;
+            margin-bottom: 16px;
+        }
+        .step-label span { color: #0095f6; font-weight: 700; }
+
+        /* 스텝 패널 */
+        .step-panel { display: none; flex-direction: column; gap: 6px; }
+        .step-panel.active { display: flex; }
+
+        /* 인풋 */
+        .auth-input {
+            width: 100%; padding: 9px 10px;
+            background: #fafafa; border: 1px solid #dbdbdb; border-radius: 4px;
+            font-size: 12px; font-family: 'Instrument Sans', sans-serif;
+            color: #262626; outline: none; transition: border-color 0.15s;
+        }
+        .auth-input:focus { border-color: #a8a8a8; background: #fff; }
+        .auth-input::placeholder { color: #aaa; }
+        .auth-input.error { border-color: #ed4956; }
+
+        .field-error { font-size: 11px; color: #ed4956; margin-top: -2px; padding-left: 2px; }
+
+        /* 섹션 구분 */
+        .section-divider {
+            display: flex; align-items: center; gap: 10px; margin: 6px 0 4px;
+        }
+        .section-divider::before, .section-divider::after {
+            content: ''; flex: 1; height: 1px; background: #efefef;
+        }
+        .section-divider span { font-size: 11px; font-weight: 700; color: #8e8e8e; white-space: nowrap; }
+
+        /* 성별 라디오 */
+        .radio-group { display: flex; gap: 6px; }
+        .radio-option { flex: 1; position: relative; }
+        .radio-option input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+        .radio-label {
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px 4px; border: 1px solid #dbdbdb; border-radius: 4px;
+            font-size: 12px; font-weight: 600; color: #8e8e8e;
+            cursor: pointer; transition: all 0.15s; background: #fafafa;
+        }
+        .radio-option input[type="radio"]:checked + .radio-label {
+            border-color: #0095f6; background: rgba(0,149,246,0.08); color: #0095f6;
+        }
+        .radio-label:hover { border-color: #a8a8a8; color: #262626; }
+
+        /* 토글 행 */
+        .toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; background: #fafafa;
+            border: 1px solid #dbdbdb; border-radius: 8px;
+        }
+        .toggle-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+        .toggle-icon { font-size: 18px; flex-shrink: 0; }
+        .toggle-title { font-size: 13px; font-weight: 700; color: #262626; }
+        .toggle-desc { font-size: 11px; color: #8e8e8e; margin-top: 1px; }
+
+        /* 토글 스위치 */
+        .toggle-switch { position: relative; width: 44px; height: 26px; flex-shrink: 0; margin-left: 10px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .toggle-track {
+            position: absolute; inset: 0; background: #dbdbdb;
+            border-radius: 99px; cursor: pointer; transition: background 0.2s;
+        }
+        .toggle-track::after {
+            content: ''; position: absolute; top: 3px; left: 3px;
+            width: 20px; height: 20px; background: #fff; border-radius: 50%;
+            transition: transform 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+        }
+        .toggle-switch input:checked + .toggle-track { background: #0095f6; }
+        .toggle-switch input:checked + .toggle-track::after { transform: translateX(18px); }
+
+        /* 비즈니스 추가 필드 */
+        .business-extra { display: none; flex-direction: column; gap: 6px; padding-top: 2px; }
+        .business-extra.open { display: flex; }
+
+        .auth-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238e8e8e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            padding-right: 28px;
+            cursor: pointer;
+        }
+
+        /* 버튼 */
+        .btn-next, .btn-submit {
+            width: 100%; padding: 8px; background: #0095f6; color: #fff;
+            border: none; border-radius: 8px; font-size: 14px; font-weight: 700;
+            font-family: 'Instrument Sans', sans-serif; cursor: pointer;
+            transition: opacity 0.15s; margin-top: 8px;
+        }
+        .btn-next:hover, .btn-submit:hover { opacity: 0.85; }
+
+        .btn-back {
+            width: 100%; padding: 8px; background: none; color: #262626;
+            border: 1px solid #dbdbdb; border-radius: 8px; font-size: 14px; font-weight: 700;
+            font-family: 'Instrument Sans', sans-serif; cursor: pointer;
+            transition: background 0.15s; margin-top: 6px;
+        }
+        .btn-back:hover { background: #fafafa; }
+
+        .auth-terms {
+            font-size: 11px; color: #8e8e8e; text-align: center;
+            margin-top: 12px; line-height: 1.5;
+        }
+        .auth-terms a { color: #00376b; font-weight: 600; text-decoration: none; }
+
+        .auth-bottom {
+            background: #fff; border: 1px solid #dbdbdb; border-radius: 4px;
+            padding: 20px; text-align: center; font-size: 14px; color: #262626;
+        }
+        .auth-bottom a { color: #0095f6; font-weight: 700; text-decoration: none; }
+        .auth-bottom a:hover { text-decoration: underline; }
+    </style>
 </head>
 <body>
-<h2>회원가입</h2>
-<form th:action="@{/join}" th:object="${userDTO}" method="post">
-    <div>
-        <label>아이디:</label>
-        <input type="text" th:field="*{snapiaId}" placeholder="아이디 입력">
-        <p th:if="${#fields.hasErrors('snapiaId')}" th:errors="*{snapiaId}"></p>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <div class="auth-logo"><span>Snapia</span></div>
+
+        <!-- 스텝 인디케이터 -->
+        <div class="step-indicator">
+            <div class="step-dot active" id="dot1"></div>
+            <div class="step-dot" id="dot2"></div>
+        </div>
+        <div class="step-label" id="stepLabel"><span>1단계</span> / 2 — 기본 정보 및 성별</div>
+
+        <form th:action="@{/join}" th:object="${userDTO}" method="post" id="joinForm">
+
+            <!-- isBusiness 값 - step 밖에 위치해야 display:none 영향 안 받음 -->
+            <input type="hidden" id="isBusinessHidden" name="business" value="false">
+
+            <!-- ── STEP 1: 기본 정보 + 성별 ── -->
+            <div class="step-panel active" id="step1">
+
+                <input type="text" th:field="*{snapiaId}" class="auth-input"
+                       th:classappend="${#fields.hasErrors('snapiaId')} ? ' error' : ''"
+                       placeholder="아이디" autocomplete="username">
+                <p th:if="${#fields.hasErrors('snapiaId')}" th:errors="*{snapiaId}" class="field-error"></p>
+
+                <input type="password" th:field="*{password}" class="auth-input"
+                       th:classappend="${#fields.hasErrors('password')} ? ' error' : ''"
+                       placeholder="비밀번호" autocomplete="new-password">
+                <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="field-error"></p>
+
+                <input type="text" th:field="*{name}" class="auth-input" placeholder="성명">
+
+                <input type="email" th:field="*{email}" class="auth-input"
+                       th:classappend="${#fields.hasErrors('email')} ? ' error' : ''"
+                       placeholder="이메일" autocomplete="email">
+                <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="field-error"></p>
+
+                <input type="tel" th:field="*{phoneNum}" class="auth-input"
+                       placeholder="전화번호" autocomplete="tel">
+
+                <!-- 성별 -->
+                <div class="section-divider"><span>성별</span></div>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" th:field="*{gender}" value="MAN">
+                        <span class="radio-label">남성</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" th:field="*{gender}" value="WOMAN">
+                        <span class="radio-label">여성</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" th:field="*{gender}" value="UNKNOWN">
+                        <span class="radio-label">비공개</span>
+                    </label>
+                </div>
+
+                <button type="button" class="btn-next" onclick="goStep2()">다음</button>
+            </div>
+
+            <!-- ── STEP 2: 공개 설정 + 계정 유형 ── -->
+            <div class="step-panel" id="step2">
+
+                <div class="section-divider"><span>공개 설정</span></div>
+                <div class="toggle-row">
+                    <div class="toggle-left">
+                        <span class="toggle-icon">🔒</span>
+                        <div>
+                            <div class="toggle-title">비공개 계정</div>
+                            <div class="toggle-desc">승인한 팔로워만 내 게시물을 볼 수 있어요</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="privacyToggle" onchange="togglePrivacy(this)">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+                <!-- PubOrNot hidden inputs -->
+                <input type="radio" name="pubOrNot" value="PUB"  id="pubPub"  checked style="display:none;">
+                <input type="radio" name="pubOrNot" value="PRIV" id="pubPriv" style="display:none;">
+
+                <div class="section-divider"><span>계정 유형</span></div>
+                <div class="toggle-row">
+                    <div class="toggle-left">
+                        <span class="toggle-icon">🏢</span>
+                        <div>
+                            <div class="toggle-title">비즈니스 계정</div>
+                            <div class="toggle-desc">예약, 포트폴리오 등 비즈니스 기능 이용</div>
+                        </div>
+                    </div>
+                    <label class="toggle-switch" onclick="event.stopPropagation()">
+                        <input type="checkbox" id="businessToggle"
+                               onchange="toggleBusiness(this)">
+                        <span class="toggle-track"></span>
+                    </label>
+                </div>
+
+                <!-- 비즈니스 추가 필드 -->
+                <div id="businessExtra" class="business-extra">
+                    <input type="text" name="companyName" class="auth-input" placeholder="비즈니스 이름 *">
+                    <select name="category" id="categorySelect" class="auth-input auth-select">
+                        <option value="" disabled selected>카테고리 선택 *</option>
+                        <option value="CAFE">☕ 카페</option>
+                        <option value="RESTAURANT">🍽️ 음식점</option>
+                        <option value="BEAUTY">💄 미용</option>
+                        <option value="FITNESS">💪 헬스/필라테스/PT</option>
+                        <option value="STUDIO">📷 사진스튜디오/영상</option>
+                        <option value="FASHION">👗 의류/쇼핑몰</option>
+                        <option value="INTERIOR">🛋️ 인테리어/소품샵</option>
+                        <option value="EDUCATION">📚 교육/강의/클래스</option>
+                        <option value="PET">🐾 반려동물</option>
+                        <option value="TRAVEL">✈️ 여행/숙박</option>
+                        <option value="HEALTH">🏥 병원/한의원</option>
+                        <option value="ENTERTAINMENT">🎭 공연/전시/이벤트</option>
+                        <option value="TECH">💻 IT/소프트웨어</option>
+                        <option value="CREATOR">🎥 인플루언서/크리에이터</option>
+                        <option value="OTHER">🔧 기타</option>
+                    </select>
+                    <input type="tel" name="contact" class="auth-input" placeholder="비즈니스 전화번호 (선택)">
+                </div>
+
+                <button type="submit" class="btn-submit" id="btnSubmit" onclick="return validateStep2()">가입하기</button>
+                <button type="button" class="btn-back" onclick="goStep1()">이전</button>
+
+                <p class="auth-terms">
+                    가입하면 Snapia의 <a href="#">이용약관</a> 및
+                    <a href="#">개인정보처리방침</a>에 동의하게 됩니다.
+                </p>
+            </div>
+
+        </form>
     </div>
-    <div>
-        <label>비밀번호:</label>
-        <input type="password" th:field="*{password}" placeholder="비밀번호 입력">
-        <p th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+
+    <div class="auth-bottom">
+        계정이 있으신가요? <a th:href="@{/login}">로그인</a>
     </div>
-    <div>
-        <label>이름:</label>
-        <input type="text" th:field="*{name}">
-    </div>
-    <div>
-        <label>이메일:</label>
-        <input type="email" th:field="*{email}">
-        <p th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
-    </div>
-    <div>
-        <label>전화번호:</label>
-        <input type="text" th:field="*{phoneNum}">
-    </div>
-    <button type="submit">가입하기</button>
-</form>
+</div>
+
+<script>
+    function goStep2() {
+        const snapiaId = document.querySelector('input[name="snapiaId"]').value.trim();
+        const password = document.querySelector('input[name="password"]').value.trim();
+        const name     = document.querySelector('input[name="name"]').value.trim();
+        const email    = document.querySelector('input[name="email"]').value.trim();
+
+        if (!snapiaId || !password || !name || !email) {
+            alert('아이디, 비밀번호, 이름, 이메일은 필수입니다.');
+            return;
+        }
+
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
+        document.getElementById('dot1').classList.remove('active');
+        document.getElementById('dot1').classList.add('done');
+        document.getElementById('dot2').classList.add('active');
+        document.getElementById('stepLabel').innerHTML = '<span>2단계</span> / 2 — 공개 설정 및 계정 유형';
+    }
+
+    function goStep1() {
+        document.getElementById('step2').classList.remove('active');
+        document.getElementById('step1').classList.add('active');
+        document.getElementById('dot2').classList.remove('active');
+        document.getElementById('dot1').classList.remove('done');
+        document.getElementById('dot1').classList.add('active');
+        document.getElementById('stepLabel').innerHTML = '<span>1단계</span> / 2 — 기본 정보 및 성별';
+    }
+
+    function togglePrivacy(cb) {
+        document.getElementById('pubPub').checked  = !cb.checked;
+        document.getElementById('pubPriv').checked =  cb.checked;
+    }
+
+    function toggleBusiness(cb) {
+        const extra = document.getElementById('businessExtra');
+        cb.checked ? extra.classList.add('open') : extra.classList.remove('open');
+        document.getElementById('isBusinessHidden').value = cb.checked ? 'true' : 'false';
+    }
+
+    function validateStep2() {
+        const isBusiness = document.getElementById('businessToggle').checked;
+        if (isBusiness) {
+            const bizName = document.querySelector('input[name="companyName"]').value.trim();
+            const category = document.getElementById('categorySelect').value;
+            if (!bizName) { alert('비즈니스 이름을 입력해주세요.'); return false; }
+            if (!category) { alert('카테고리를 선택해주세요.'); return false; }
+        }
+        return true;
+    }
+</script>
+<th:block th:replace="~{fragments/header :: headerScript}"></th:block>
 </body>
 </html>
